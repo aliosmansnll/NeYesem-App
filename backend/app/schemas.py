@@ -1,0 +1,78 @@
+from pydantic import BaseModel, EmailStr
+from typing import Optional
+from datetime import datetime
+
+class KullaniciBase(BaseModel):
+    ad: str
+    soyad: str
+    mail: EmailStr
+    telefon: Optional[str] = None
+
+class KullaniciCreate(KullaniciBase):
+    password: str
+
+class KullaniciResponse(KullaniciBase):
+    kullaniciID: int
+    puan: Optional[int] = None
+    kayitTar: datetime
+    
+    class Config:
+        from_attributes = True
+
+class RestorantBase(BaseModel):
+    ad: str
+    mail: EmailStr
+    telefon: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+
+class RestorantCreate(RestorantBase):
+    password: str
+
+class RestorantResponse(RestorantBase):
+    restorantID: int
+    kayitTarih: datetime
+    
+    class Config:
+        from_attributes = True
+
+class MenuItemBase(BaseModel):
+    yemekadi: str
+    aciklama: Optional[str] = None
+    fiyat: int
+    kategoriad: Optional[str] = None
+
+class MenuItemCreate(MenuItemBase):
+    restorantID: int
+
+class MenuItemResponse(MenuItemBase):
+    menuID: int
+    restorantID: int
+    
+    class Config:
+        from_attributes = True
+
+class YorumBase(BaseModel):
+    yorum: Optional[str] = None
+    puan: Optional[int] = None
+    fotoURL: Optional[str] = None
+
+class YorumCreate(YorumBase):
+    kullaniciID: int
+    restorantID: int
+    menuID: Optional[int] = None  # Menü yorumu için opsiyonel
+
+class YorumResponse(BaseModel):
+    yorumID: int
+    kullaniciID: int
+    restorantID: int
+    menuID: Optional[int] = None
+    yorum: Optional[str] = None
+    puan: Optional[int] = None
+    fotoURL: Optional[str] = None
+    yorumTarih: datetime
+    kullaniciAd: Optional[str] = None
+    kullaniciSoyad: Optional[str] = None
+    
+    class Config:
+        from_attributes = True
