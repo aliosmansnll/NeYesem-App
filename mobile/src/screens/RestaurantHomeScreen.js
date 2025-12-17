@@ -68,7 +68,7 @@ export default function RestaurantHomeScreen({ navigation }) {
       <View style={styles.header}>
         <View>
           <Text style={styles.greeting}>Hoş Geldiniz! 🏪</Text>
-          <Text style={styles.restaurantName}>{restaurant?.ad}</Text>
+          <Text style={styles.restaurantName}>{restaurant?.ad || 'Restoran'}</Text>
         </View>
         <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
           <Text style={styles.logoutText}>Çıkış</Text>

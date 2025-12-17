@@ -53,6 +53,24 @@ def delete_menu_item(menu_id: int, db: Session = Depends(get_db)):
     if not item:
         raise HTTPException(status_code=404, detail="Menü öğesi bulunamadı")
     
-    db.delete(item)
-    db.commit()
-    return {"message": "Menü öğesi başarıyla silindi"}
+    try:
+        # Önce menü fotoğraflarını sil
+        db.query(models.MenuFoto).filter(models.MenuFoto.menuID == menu_id).delete(synchronize_session=False)
+        
+        # Menüye ait yorumları sil (menuID null yap veya sil)
+        db.query(models.Yorum).filter(models.Yorum.menuID == menu_id).update(
+            {models.Yorum.menuID: None}, 
+            synchronize_session=False
+        )
+        
+        # Menü öğesini sil
+        db.delete(item)
+        db.commit()
+        
+        return {
+            "message": "Menü öğesi başarıyla silindi",
+            "menuID": menu_id
+        }
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Silme işlemi başarısız: {str(e)}")

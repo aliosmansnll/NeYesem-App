@@ -11,6 +11,10 @@ class KullaniciBase(BaseModel):
 class KullaniciCreate(KullaniciBase):
     password: str
 
+class KullaniciLogin(BaseModel):
+    mail: EmailStr
+    password: str
+
 class KullaniciResponse(KullaniciBase):
     kullaniciID: int
     puan: Optional[int] = None
@@ -27,6 +31,10 @@ class RestorantBase(BaseModel):
     longitude: Optional[float] = None
 
 class RestorantCreate(RestorantBase):
+    password: str
+
+class RestorantLogin(BaseModel):
+    mail: EmailStr
     password: str
 
 class RestorantResponse(RestorantBase):

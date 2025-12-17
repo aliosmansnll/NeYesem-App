@@ -38,13 +38,13 @@ def register_restaurant(restaurant: schemas.RestorantCreate, db: Session = Depen
     return db_restaurant
 
 @router.post("/login")
-def login_restaurant(mail: str, password: str, db: Session = Depends(get_db)):
+def login_restaurant(credentials: schemas.RestorantLogin, db: Session = Depends(get_db)):
     """Restoran girişi"""
-    restaurant = db.query(models.RestorantHesap).filter(models.RestorantHesap.mail == mail).first()
+    restaurant = db.query(models.RestorantHesap).filter(models.RestorantHesap.mail == credentials.mail).first()
     if not restaurant:
         raise HTTPException(status_code=401, detail="Email veya şifre hatalı")
     
-    if not utils.verify_password(password, restaurant.password_salt, restaurant.password_hash):
+    if not utils.verify_password(credentials.password, restaurant.password_salt, restaurant.password_hash):
         raise HTTPException(status_code=401, detail="Email veya şifre hatalı")
     
     return {
@@ -52,7 +52,9 @@ def login_restaurant(mail: str, password: str, db: Session = Depends(get_db)):
         "restorantID": restaurant.restorantID,
         "ad": restaurant.ad,
         "mail": restaurant.mail,
-        "telefon": restaurant.telefon
+        "telefon": restaurant.telefon,
+        "latitude": restaurant.latitude,
+        "longitude": restaurant.longitude
     }
 
 @router.get("/", response_model=List[schemas.RestorantResponse])

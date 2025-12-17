@@ -137,7 +137,7 @@ export default function HomeScreen({ navigation }) {
         <View style={styles.headerContent}>
           <View>
             <Text style={styles.greeting}>Merhaba! 👋</Text>
-            <Text style={styles.userName}>{user?.ad}</Text>
+            <Text style={styles.userName}>{user?.ad || 'Kullanıcı'}</Text>
             <Text style={styles.subGreeting}>Ne yemek istersin bugün?</Text>
           </View>
           <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>

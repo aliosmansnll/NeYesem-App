@@ -1,8 +1,9 @@
 import axios from 'axios';
 
 // Backend API URL
-// Local Network: Aynı WiFi ağındaki cihazlar için bilgisayarın IP adresi
-const API_URL = 'http://172.21.83.235:8000';
+// ÖNEMLI: Telefonun internet paylaşımı (hotspot) kullanıyorsan aşağıdaki IP'yi kullan
+// WiFi kullanıyorsan, bilgisayarın WiFi IP'sini yaz (ipconfig komutuyla öğrenebilirsin)
+const API_URL = 'http://172.20.10.5:8000';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -46,8 +47,9 @@ export const registerUser = async (userData) => {
 
 export const loginUser = async (mail, password) => {
   try {
-    const response = await api.post('/users/login', null, {
-      params: { mail, password }
+    const response = await api.post('/users/login', {
+      mail,
+      password
     });
     return response.data;
   } catch (error) {
@@ -97,8 +99,9 @@ export const registerRestaurant = async (restaurantData) => {
 
 export const loginRestaurant = async (mail, password) => {
   try {
-    const response = await api.post('/restaurants/login', null, {
-      params: { mail, password }
+    const response = await api.post('/restaurants/login', {
+      mail,
+      password
     });
     return response.data;
   } catch (error) {

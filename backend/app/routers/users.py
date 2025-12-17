@@ -41,13 +41,13 @@ def register_user(user: schemas.KullaniciCreate, db: Session = Depends(get_db)):
     return db_user
 
 @router.post("/login")
-def login_user(mail: str, password: str, db: Session = Depends(get_db)):
+def login_user(credentials: schemas.KullaniciLogin, db: Session = Depends(get_db)):
     """Kullanıcı girişi"""
-    user = db.query(models.KullaniciHesap).filter(models.KullaniciHesap.mail == mail).first()
+    user = db.query(models.KullaniciHesap).filter(models.KullaniciHesap.mail == credentials.mail).first()
     if not user:
         raise HTTPException(status_code=401, detail="Email veya şifre hatalı")
     
-    if not utils.verify_password(password, user.password_salt, user.password_hash):
+    if not utils.verify_password(credentials.password, user.password_salt, user.password_hash):
         raise HTTPException(status_code=401, detail="Email veya şifre hatalı")
     
     return {
@@ -55,7 +55,8 @@ def login_user(mail: str, password: str, db: Session = Depends(get_db)):
         "kullaniciID": user.kullaniciID,
         "ad": user.ad,
         "soyad": user.soyad,
-        "mail": user.mail
+        "mail": user.mail,
+        "puan": user.puan
     }
 
 @router.get("/", response_model=List[schemas.KullaniciResponse])
