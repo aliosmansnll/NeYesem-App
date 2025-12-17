@@ -71,3 +71,26 @@ def get_user(kullanici_id: int, db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=404, detail="Kullanıcı bulunamadı")
     return user
+
+@router.delete("/{kullanici_id}", status_code=status.HTTP_200_OK)
+def delete_user(kullanici_id: int, db: Session = Depends(get_db)):
+    """Kullanıcı silme"""
+    user = db.query(models.KullaniciHesap).filter(models.KullaniciHesap.kullaniciID == kullanici_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Kullanıcı bulunamadı")
+    
+    try:
+        # Kullanıcının yorumlarını sil
+        db.query(models.Yorum).filter(models.Yorum.kullaniciID == kullanici_id).delete(synchronize_session=False)
+        
+        # Kullanıcıyı sil
+        db.delete(user)
+        db.commit()
+        
+        return {
+            "message": "Kullanıcı başarıyla silindi",
+            "kullaniciID": kullanici_id
+        }
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Silme işlemi başarısız: {str(e)}")

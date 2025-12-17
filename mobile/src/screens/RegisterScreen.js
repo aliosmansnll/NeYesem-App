@@ -2,16 +2,19 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
-  TouchableOpacity,
   StyleSheet,
   Alert,
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  TouchableOpacity,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../context/AuthContext';
+import Button from '../components/Button';
+import Input from '../components/Input';
+import { colors } from '../theme/colors';
+import { spacing, borderRadius, shadows } from '../theme/spacing';
 
 export default function RegisterScreen({ navigation }) {
   const [formData, setFormData] = useState({
@@ -63,164 +66,225 @@ export default function RegisterScreen({ navigation }) {
   };
 
   return (
-    <KeyboardAvoidingView
+    <LinearGradient
+      colors={['#FFE5E5', '#F8F9FA']}
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.content}>
-          <Text style={styles.title}>Kayıt Ol</Text>
-          <Text style={styles.subtitle}>Yeni hesap oluştur 🎉</Text>
-
-          <View style={styles.form}>
-            <TextInput
-              style={styles.input}
-              placeholder="Ad *"
-              value={formData.ad}
-              onChangeText={(value) => updateField('ad', value)}
-              autoCapitalize="words"
-            />
-
-            <TextInput
-              style={styles.input}
-              placeholder="Soyad *"
-              value={formData.soyad}
-              onChangeText={(value) => updateField('soyad', value)}
-              autoCapitalize="words"
-            />
-
-            <TextInput
-              style={styles.input}
-              placeholder="E-posta *"
-              value={formData.mail}
-              onChangeText={(value) => updateField('mail', value)}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-
-            <TextInput
-              style={styles.input}
-              placeholder="Telefon (opsiyonel)"
-              value={formData.telefon}
-              onChangeText={(value) => updateField('telefon', value)}
-              keyboardType="phone-pad"
-            />
-
-            <TextInput
-              style={styles.input}
-              placeholder="Şifre *"
-              value={formData.password}
-              onChangeText={(value) => updateField('password', value)}
-              secureTextEntry
-              autoCapitalize="none"
-            />
-
-            <TextInput
-              style={styles.input}
-              placeholder="Şifre Tekrar *"
-              value={formData.confirmPassword}
-              onChangeText={(value) => updateField('confirmPassword', value)}
-              secureTextEntry
-              autoCapitalize="none"
-            />
-
-            <TouchableOpacity
-              style={styles.button}
-              onPress={handleRegister}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.buttonText}>Kayıt Ol</Text>
-              )}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.loginLink}
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.header}>
+            <TouchableOpacity 
+              style={styles.backButton}
               onPress={() => navigation.goBack()}
             >
-              <Text style={styles.loginText}>
-                Hesabınız var mı? <Text style={styles.loginTextBold}>Giriş Yap</Text>
-              </Text>
+              <Text style={styles.backButtonText}>←</Text>
             </TouchableOpacity>
           </View>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+
+          <View style={styles.content}>
+            <View style={styles.iconContainer}>
+              <LinearGradient
+                colors={[colors.secondary, colors.secondaryLight]}
+                style={styles.iconGradient}
+              >
+                <Text style={styles.icon}>✨</Text>
+              </LinearGradient>
+            </View>
+
+            <Text style={styles.title}>Aramıza Katıl!</Text>
+            <Text style={styles.subtitle}>Lezzet dünyasına hoş geldin</Text>
+
+            <View style={styles.formContainer}>
+              <View style={styles.formRow}>
+                <Input
+                  label="Ad *"
+                  icon="👤"
+                  placeholder="Adın"
+                  value={formData.ad}
+                  onChangeText={(value) => updateField('ad', value)}
+                  autoCapitalize="words"
+                />
+
+                <Input
+                  label="Soyad *"
+                  icon="👤"
+                  placeholder="Soyadın"
+                  value={formData.soyad}
+                  onChangeText={(value) => updateField('soyad', value)}
+                  autoCapitalize="words"
+                />
+              </View>
+
+              <Input
+                label="E-posta *"
+                icon="📧"
+                placeholder="ornek@email.com"
+                value={formData.mail}
+                onChangeText={(value) => updateField('mail', value)}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+
+              <Input
+                label="Telefon"
+                icon="📱"
+                placeholder="5XX XXX XX XX (opsiyonel)"
+                value={formData.telefon}
+                onChangeText={(value) => updateField('telefon', value)}
+                keyboardType="phone-pad"
+              />
+
+              <Input
+                label="Şifre *"
+                icon="🔒"
+                placeholder="En az 6 karakter"
+                value={formData.password}
+                onChangeText={(value) => updateField('password', value)}
+                secureTextEntry
+                autoCapitalize="none"
+              />
+
+              <Input
+                label="Şifre Tekrar *"
+                icon="🔒"
+                placeholder="Şifreni tekrar gir"
+                value={formData.confirmPassword}
+                onChangeText={(value) => updateField('confirmPassword', value)}
+                secureTextEntry
+                autoCapitalize="none"
+              />
+
+              <Button
+                title="Hesap Oluştur"
+                variant="secondary"
+                size="large"
+                fullWidth
+                loading={loading}
+                onPress={handleRegister}
+              />
+
+              <View style={styles.divider}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>veya</Text>
+                <View style={styles.dividerLine} />
+              </View>
+
+              <TouchableOpacity
+                style={styles.loginLink}
+                onPress={() => navigation.goBack()}
+              >
+                <Text style={styles.loginText}>
+                  Zaten hesabın var mı? <Text style={styles.loginTextBold}>Giriş Yap</Text>
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
   scrollContent: {
     flexGrow: 1,
   },
+  header: {
+    paddingTop: spacing.xxxl,
+    paddingHorizontal: spacing.lg,
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: borderRadius.round,
+    backgroundColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.small,
+  },
+  backButtonText: {
+    fontSize: 24,
+    color: colors.dark,
+  },
   content: {
     flex: 1,
+    padding: spacing.xl,
+    paddingTop: spacing.lg,
+  },
+  iconContainer: {
+    alignSelf: 'center',
+    marginBottom: spacing.lg,
+  },
+  iconGradient: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    alignItems: 'center',
     justifyContent: 'center',
-    padding: 20,
-    paddingTop: 40,
-    paddingBottom: 40,
+    ...shadows.large,
+  },
+  icon: {
+    fontSize: 48,
   },
   title: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    color: '#FF6B6B',
+    fontSize: 32,
+    fontWeight: '900',
+    color: colors.dark,
     textAlign: 'center',
-    marginBottom: 10,
+    marginBottom: spacing.xs,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
+    color: colors.gray,
     textAlign: 'center',
-    marginBottom: 30,
+    marginBottom: spacing.xl,
   },
-  form: {
-    backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
+  formContainer: {
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.xl,
+    padding: spacing.xl,
+    ...shadows.large,
   },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 15,
-    marginBottom: 15,
-    fontSize: 16,
-    backgroundColor: '#f9f9f9',
+  formRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
   },
-  button: {
-    backgroundColor: '#FF6B6B',
-    padding: 15,
-    borderRadius: 8,
+  divider: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 10,
+    marginVertical: spacing.lg,
   },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.veryLightGray,
+  },
+  dividerText: {
+    marginHorizontal: spacing.md,
+    color: colors.lightGray,
+    fontSize: 14,
+    fontWeight: '500',
   },
   loginLink: {
-    marginTop: 20,
     alignItems: 'center',
+    paddingVertical: spacing.md,
   },
   loginText: {
-    color: '#666',
-    fontSize: 14,
+    fontSize: 15,
+    color: colors.gray,
   },
   loginTextBold: {
-    color: '#FF6B6B',
-    fontWeight: 'bold',
+    color: colors.secondary,
+    fontWeight: '700',
   },
 });

@@ -9,8 +9,12 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { getAllRestaurants } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import Card from '../components/Card';
+import { colors } from '../theme/colors';
+import { spacing, borderRadius, shadows } from '../theme/spacing';
 
 export default function HomeScreen({ navigation }) {
   const [restaurants, setRestaurants] = useState([]);
@@ -56,53 +60,107 @@ export default function HomeScreen({ navigation }) {
   };
 
   const renderRestaurant = ({ item }) => (
-    <TouchableOpacity
-      style={styles.card}
+    <Card
       onPress={() => navigation.navigate('RestaurantDetail', { restaurant: item })}
     >
       <View style={styles.cardHeader}>
-        <Text style={styles.restaurantName}>{item.ad}</Text>
-        <Text style={styles.restaurantId}>#{item.restorantID}</Text>
+        <View style={styles.restaurantIconContainer}>
+          <Text style={styles.restaurantIcon}>🍽️</Text>
+        </View>
+        <View style={styles.cardHeaderText}>
+          <Text style={styles.restaurantName} numberOfLines={1}>
+            {item.ad}
+          </Text>
+          <Text style={styles.restaurantId}>#{item.restorantID}</Text>
+        </View>
+        <View style={styles.arrowContainer}>
+          <Text style={styles.arrow}>→</Text>
+        </View>
       </View>
-      
-      {item.telefon && (
-        <Text style={styles.restaurantInfo}>📞 {item.telefon}</Text>
-      )}
-      
-      <Text style={styles.restaurantInfo}>📧 {item.mail}</Text>
-      
-      {item.latitude && item.longitude && (
-        <Text style={styles.location}>
-          📍 {item.latitude.toFixed(4)}, {item.longitude.toFixed(4)}
-        </Text>
-      )}
-      
+
+      <View style={styles.infoContainer}>
+        {item.telefon && (
+          <View style={styles.infoRow}>
+            <Text style={styles.infoIcon}>📞</Text>
+            <Text style={styles.infoText}>{item.telefon}</Text>
+          </View>
+        )}
+        
+        <View style={styles.infoRow}>
+          <Text style={styles.infoIcon}>📧</Text>
+          <Text style={styles.infoText} numberOfLines={1}>{item.mail}</Text>
+        </View>
+        
+        {item.latitude && item.longitude && (
+          <View style={styles.infoRow}>
+            <Text style={styles.infoIcon}>📍</Text>
+            <Text style={styles.infoText}>
+              {item.latitude.toFixed(4)}, {item.longitude.toFixed(4)}
+            </Text>
+          </View>
+        )}
+      </View>
+
       <View style={styles.cardFooter}>
-        <Text style={styles.date}>
-          Kayıt: {new Date(item.kayitTarih).toLocaleDateString('tr-TR')}
-        </Text>
+        <View style={styles.dateContainer}>
+          <Text style={styles.dateLabel}>Kayıt Tarihi</Text>
+          <Text style={styles.dateValue}>
+            {new Date(item.kayitTarih).toLocaleDateString('tr-TR', {
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric'
+            })}
+          </Text>
+        </View>
       </View>
-    </TouchableOpacity>
+    </Card>
   );
 
   if (loading) {
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#FF6B6B" />
-      </View>
+      <LinearGradient
+        colors={['#FFE5E5', '#F8F9FA']}
+        style={styles.centerContainer}
+      >
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={styles.loadingText}>Restoranlar yükleniyor...</Text>
+      </LinearGradient>
     );
   }
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.greeting}>Merhaba, {user?.ad}! 👋</Text>
-          <Text style={styles.subGreeting}>Ne yemek istersin?</Text>
+      <LinearGradient
+        colors={[colors.primary, colors.primaryLight]}
+        style={styles.header}
+      >
+        <View style={styles.headerContent}>
+          <View>
+            <Text style={styles.greeting}>Merhaba! 👋</Text>
+            <Text style={styles.userName}>{user?.ad}</Text>
+            <Text style={styles.subGreeting}>Ne yemek istersin bugün?</Text>
+          </View>
+          <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+            <Text style={styles.logoutIcon}>🚪</Text>
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-          <Text style={styles.logoutText}>Çıkış</Text>
-        </TouchableOpacity>
+      </LinearGradient>
+
+      <View style={styles.statsContainer}>
+        <View style={styles.statItem}>
+          <Text style={styles.statNumber}>{restaurants.length}</Text>
+          <Text style={styles.statLabel}>Restoran</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.statItem}>
+          <Text style={styles.statNumber}>⭐</Text>
+          <Text style={styles.statLabel}>Keşfet</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.statItem}>
+          <Text style={styles.statNumber}>🔥</Text>
+          <Text style={styles.statLabel}>Popüler</Text>
+        </View>
       </View>
 
       <FlatList
@@ -110,16 +168,20 @@ export default function HomeScreen({ navigation }) {
         renderItem={renderRestaurant}
         keyExtractor={(item) => item.restorantID.toString()}
         contentContainerStyle={styles.list}
+        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={['#FF6B6B']}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
           />
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>Henüz restoran bulunmuyor 🍽️</Text>
+            <Text style={styles.emptyIcon}>🍽️</Text>
+            <Text style={styles.emptyTitle}>Henüz restoran yok</Text>
+            <Text style={styles.emptyText}>İlk restoranı keşfet!</Text>
           </View>
         }
       />
@@ -130,101 +192,194 @@ export default function HomeScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.background,
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+  },
+  loadingText: {
+    marginTop: spacing.md,
+    fontSize: 16,
+    color: colors.gray,
+    fontWeight: '500',
   },
   header: {
-    backgroundColor: '#fff',
-    padding: 20,
-    paddingTop: 50,
+    paddingTop: spacing.xxxl + spacing.lg,
+    paddingBottom: spacing.xl,
+    paddingHorizontal: spacing.xl,
+    borderBottomLeftRadius: borderRadius.xl,
+    borderBottomRightRadius: borderRadius.xl,
+    ...shadows.large,
+  },
+  headerContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    alignItems: 'flex-start',
   },
   greeting: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: 16,
+    color: colors.white,
+    opacity: 0.9,
+    fontWeight: '500',
+  },
+  userName: {
+    fontSize: 28,
+    fontWeight: '900',
+    color: colors.white,
+    marginTop: spacing.xs,
+    marginBottom: spacing.xs,
   },
   subGreeting: {
     fontSize: 14,
-    color: '#666',
-    marginTop: 4,
+    color: colors.white,
+    opacity: 0.8,
   },
   logoutButton: {
-    backgroundColor: '#FF6B6B',
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: borderRadius.round,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  logoutText: {
-    color: '#fff',
-    fontWeight: 'bold',
+  logoutIcon: {
+    fontSize: 20,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    backgroundColor: colors.white,
+    marginHorizontal: spacing.xl,
+    marginTop: -spacing.xl,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    ...shadows.medium,
+  },
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statNumber: {
+    fontSize: 24,
+    fontWeight: '900',
+    color: colors.dark,
+    marginBottom: spacing.xs,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: colors.gray,
+    fontWeight: '500',
+  },
+  statDivider: {
+    width: 1,
+    backgroundColor: colors.veryLightGray,
+    marginHorizontal: spacing.md,
   },
   list: {
-    padding: 15,
-  },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    padding: spacing.xl,
+    paddingTop: spacing.lg,
   },
   cardHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: spacing.md,
+  },
+  restaurantIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.md,
+  },
+  restaurantIcon: {
+    fontSize: 28,
+  },
+  cardHeaderText: {
+    flex: 1,
   },
   restaurantName: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-    flex: 1,
+    fontWeight: '700',
+    color: colors.dark,
+    marginBottom: spacing.xs / 2,
   },
   restaurantId: {
-    fontSize: 14,
-    color: '#999',
-    fontWeight: 'bold',
+    fontSize: 13,
+    color: colors.lightGray,
+    fontWeight: '600',
   },
-  restaurantInfo: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 5,
+  arrowContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: borderRadius.sm,
+    backgroundColor: colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  location: {
-    fontSize: 12,
-    color: '#999',
-    marginTop: 5,
+  arrow: {
+    fontSize: 18,
+    color: colors.primary,
+  },
+  infoContainer: {
+    backgroundColor: colors.background,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
+  },
+  infoIcon: {
+    fontSize: 16,
+    marginRight: spacing.sm,
+    width: 24,
+  },
+  infoText: {
+    fontSize: 14,
+    color: colors.gray,
+    flex: 1,
   },
   cardFooter: {
-    marginTop: 10,
-    paddingTop: 10,
+    paddingTop: spacing.md,
     borderTopWidth: 1,
-    borderTopColor: '#eee',
+    borderTopColor: colors.veryLightGray,
   },
-  date: {
+  dateContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  dateLabel: {
     fontSize: 12,
-    color: '#999',
+    color: colors.lightGray,
+    fontWeight: '500',
+  },
+  dateValue: {
+    fontSize: 13,
+    color: colors.gray,
+    fontWeight: '600',
   },
   emptyContainer: {
     alignItems: 'center',
-    marginTop: 100,
+    marginTop: spacing.xxxl * 2,
+  },
+  emptyIcon: {
+    fontSize: 64,
+    marginBottom: spacing.lg,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.dark,
+    marginBottom: spacing.xs,
   },
   emptyText: {
-    fontSize: 16,
-    color: '#999',
+    fontSize: 14,
+    color: colors.gray,
   },
 });

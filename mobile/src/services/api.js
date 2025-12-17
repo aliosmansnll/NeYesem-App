@@ -1,10 +1,8 @@
 import axios from 'axios';
 
-// Backend API URL - localhost yerine bilgisayarınızın IP adresini kullanın
-// Emulator için: Android - 10.0.2.2, iOS - localhost
-// Fiziksel cihaz için: bilgisayarın IP adresi (örn: 192.168.1.100)
-// const API_URL = 'http://10.0.2.2:8000'; // Android emulator için
-const API_URL = 'http://172.21.83.235:8000'; // Fiziksel cihaz için
+// Backend API URL
+// Local Network: Aynı WiFi ağındaki cihazlar için bilgisayarın IP adresi
+const API_URL = 'http://172.21.83.235:8000';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -77,6 +75,15 @@ export const getAllUsers = async (skip = 0, limit = 100) => {
   }
 };
 
+export const deleteUser = async (userId) => {
+  try {
+    const response = await api.delete(`/users/${userId}`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data?.detail || 'Kullanıcı silinemedi';
+  }
+};
+
 // ==================== RESTAURANT ENDPOINTS ====================
 
 export const registerRestaurant = async (restaurantData) => {
@@ -116,6 +123,15 @@ export const getRestaurant = async (restaurantId) => {
     return response.data;
   } catch (error) {
     throw error.response?.data?.detail || 'Restoran bulunamadı';
+  }
+};
+
+export const deleteRestaurant = async (restaurantId) => {
+  try {
+    const response = await api.delete(`/restaurants/${restaurantId}`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data?.detail || 'Restoran silinemedi';
   }
 };
 

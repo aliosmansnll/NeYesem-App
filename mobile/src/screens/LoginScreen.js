@@ -2,15 +2,19 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
-  TouchableOpacity,
   StyleSheet,
   Alert,
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
+  TouchableOpacity,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../context/AuthContext';
+import Button from '../components/Button';
+import Input from '../components/Input';
+import { colors } from '../theme/colors';
+import { spacing, borderRadius, shadows } from '../theme/spacing';
 
 export default function LoginScreen({ navigation }) {
   const [mail, setMail] = useState('');
@@ -34,145 +38,182 @@ export default function LoginScreen({ navigation }) {
   };
 
   return (
-    <KeyboardAvoidingView
+    <LinearGradient
+      colors={['#FFE5E5', '#F8F9FA']}
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <View style={styles.content}>
-        <Text style={styles.icon}>👤</Text>
-        <Text style={styles.title}>Kullanıcı Girişi</Text>
-        <Text style={styles.subtitle}>Hoş Geldiniz! 🍽️</Text>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.header}>
+            <TouchableOpacity 
+              style={styles.backButton}
+              onPress={() => navigation.navigate('Welcome')}
+            >
+              <Text style={styles.backButtonText}>←</Text>
+            </TouchableOpacity>
+          </View>
 
-        <View style={styles.form}>
-          <TextInput
-            style={styles.input}
-            placeholder="E-posta"
-            value={mail}
-            onChangeText={setMail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
+          <View style={styles.content}>
+            <View style={styles.iconContainer}>
+              <LinearGradient
+                colors={[colors.primary, colors.primaryLight]}
+                style={styles.iconGradient}
+              >
+                <Text style={styles.icon}>👤</Text>
+              </LinearGradient>
+            </View>
 
-          <TextInput
-            style={styles.input}
-            placeholder="Şifre"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            autoCapitalize="none"
-          />
+            <Text style={styles.title}>Hoş Geldin!</Text>
+            <Text style={styles.subtitle}>Lezzet yolculuğuna devam et</Text>
 
-          <TouchableOpacity
-            style={styles.button}
-            onPress={handleLogin}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>Giriş Yap</Text>
-            )}
-          </TouchableOpacity>
+            <View style={styles.formContainer}>
+              <Input
+                label="E-posta"
+                icon="📧"
+                placeholder="ornek@email.com"
+                value={mail}
+                onChangeText={setMail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
 
-          <TouchableOpacity
-            style={styles.registerLink}
-            onPress={() => navigation.navigate('UserRegister')}
-          >
-            <Text style={styles.registerText}>
-              Hesabınız yok mu? <Text style={styles.registerTextBold}>Kayıt Ol</Text>
-            </Text>
-          </TouchableOpacity>
+              <Input
+                label="Şifre"
+                icon="🔒"
+                placeholder="••••••••"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                autoCapitalize="none"
+              />
 
-          <TouchableOpacity
-            style={styles.backLink}
-            onPress={() => navigation.navigate('Welcome')}
-          >
-            <Text style={styles.backText}>← Geri Dön</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </KeyboardAvoidingView>
+              <Button
+                title="Giriş Yap"
+                variant="primary"
+                size="large"
+                fullWidth
+                loading={loading}
+                onPress={handleLogin}
+              />
+
+              <View style={styles.divider}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>veya</Text>
+                <View style={styles.dividerLine} />
+              </View>
+
+              <TouchableOpacity
+                style={styles.registerLink}
+                onPress={() => navigation.navigate('UserRegister')}
+              >
+                <Text style={styles.registerText}>
+                  Hesabın yok mu? <Text style={styles.registerTextBold}>Kayıt Ol</Text>
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
+  header: {
+    paddingTop: spacing.xxxl,
+    paddingHorizontal: spacing.lg,
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: borderRadius.round,
+    backgroundColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.small,
+  },
+  backButtonText: {
+    fontSize: 24,
+    color: colors.dark,
   },
   content: {
     flex: 1,
+    padding: spacing.xl,
+    paddingTop: spacing.lg,
+  },
+  iconContainer: {
+    alignSelf: 'center',
+    marginBottom: spacing.lg,
+  },
+  iconGradient: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    alignItems: 'center',
     justifyContent: 'center',
-    padding: 20,
+    ...shadows.large,
   },
   icon: {
-    fontSize: 80,
-    textAlign: 'center',
-    marginBottom: 20,
+    fontSize: 48,
   },
   title: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    color: '#FF6B6B',
+    fontSize: 32,
+    fontWeight: '900',
+    color: colors.dark,
     textAlign: 'center',
-    marginBottom: 10,
+    marginBottom: spacing.xs,
   },
   subtitle: {
-    fontSize: 18,
-    color: '#666',
+    fontSize: 16,
+    color: colors.gray,
     textAlign: 'center',
-    marginBottom: 40,
+    marginBottom: spacing.xl,
   },
-  form: {
-    backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
+  formContainer: {
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.xl,
+    padding: spacing.xl,
+    ...shadows.large,
   },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 15,
-    marginBottom: 15,
-    fontSize: 16,
-    backgroundColor: '#f9f9f9',
-  },
-  button: {
-    backgroundColor: '#FF6B6B',
-    padding: 15,
-    borderRadius: 8,
+  divider: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 10,
+    marginVertical: spacing.lg,
   },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.veryLightGray,
+  },
+  dividerText: {
+    marginHorizontal: spacing.md,
+    color: colors.lightGray,
+    fontSize: 14,
+    fontWeight: '500',
   },
   registerLink: {
-    marginTop: 20,
     alignItems: 'center',
+    paddingVertical: spacing.md,
   },
   registerText: {
-    color: '#666',
-    fontSize: 14,
+    fontSize: 15,
+    color: colors.gray,
   },
   registerTextBold: {
-    color: '#FF6B6B',
-    fontWeight: 'bold',
-  },
-  backLink: {
-    marginTop: 15,
-    alignItems: 'center',
-  },
-  backText: {
-    color: '#999',
-    fontSize: 14,
+    color: colors.primary,
+    fontWeight: '700',
   },
 });
