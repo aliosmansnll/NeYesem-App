@@ -22,10 +22,14 @@ export default function RestaurantReviewsScreen() {
   });
 
   useEffect(() => {
-    fetchReviews();
-  }, []);
+    if (restaurant?.restorantID) {
+      fetchReviews();
+    }
+  }, [restaurant?.restorantID]);
 
   const fetchReviews = async () => {
+    if (!restaurant?.restorantID) return;
+    
     try {
       const data = await getRestaurantReviews(restaurant.restorantID);
       setReviews(data);

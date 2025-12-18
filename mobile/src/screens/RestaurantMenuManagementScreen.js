@@ -13,7 +13,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Pressable,
+  ActionSheetIOS,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
@@ -37,10 +37,14 @@ export default function RestaurantMenuManagementScreen() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    fetchMenu();
-  }, []);
+    if (restaurant?.restorantID) {
+      fetchMenu();
+    }
+  }, [restaurant?.restorantID]);
 
   const fetchMenu = async () => {
+    if (!restaurant?.restorantID) return;
+    
     try {
       const data = await getRestaurantMenu(restaurant.restorantID);
       setMenu(data);
@@ -55,6 +59,27 @@ export default function RestaurantMenuManagementScreen() {
   const onRefresh = () => {
     setRefreshing(true);
     fetchMenu();
+  };
+
+  const handleCategorySelect = () => {
+    if (Platform.OS === 'ios') {
+      // iOS için ActionSheet kullan
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ['İptal', ...KATEGORILER],
+          cancelButtonIndex: 0,
+          title: 'Kategori Seçin',
+        },
+        (buttonIndex) => {
+          if (buttonIndex > 0) {
+            setFormData({ ...formData, kategoriad: KATEGORILER[buttonIndex - 1] });
+          }
+        }
+      );
+    } else {
+      // Android için modal kullan
+      setCategoryModalVisible(true);
+    }
   };
 
   const handleAddMenuItem = async () => {
@@ -219,7 +244,7 @@ export default function RestaurantMenuManagementScreen() {
 
               <TouchableOpacity
                 style={styles.categorySelector}
-                onPress={() => setCategoryModalVisible(true)}
+                onPress={handleCategorySelect}
               >
                 <View style={styles.categorySelectorContent}>
                   <View>
@@ -258,51 +283,56 @@ export default function RestaurantMenuManagementScreen() {
         </KeyboardAvoidingView>
       </Modal>
 
-      {/* Kategori Seçim Modal */}
-      <Modal
-        visible={categoryModalVisible}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setCategoryModalVisible(false)}
-      >
-        <View style={styles.categoryModalOverlay}>
-          <Pressable
-            style={StyleSheet.absoluteFill}
+      {/* Kategori Seçim Modal - Sadece Android için */}
+      {Platform.OS === 'android' && (
+        <Modal
+          visible={categoryModalVisible}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setCategoryModalVisible(false)}
+        >
+          <TouchableOpacity
+            style={styles.categoryModalOverlay}
+            activeOpacity={1}
             onPress={() => setCategoryModalVisible(false)}
-          />
-          <View style={styles.categoryModalContent}>
-            <View style={styles.categoryModalHeader}>
-              <Text style={styles.categoryModalTitle}>Kategori Seçin</Text>
-              <TouchableOpacity onPress={() => setCategoryModalVisible(false)}>
-                <Ionicons name="close" size={28} color="#666" />
-              </TouchableOpacity>
+          >
+            <View 
+              style={styles.categoryModalContent}
+              onStartShouldSetResponder={() => true}
+            >
+              <View style={styles.categoryModalHeader}>
+                <Text style={styles.categoryModalTitle}>Kategori Seçin</Text>
+                <TouchableOpacity onPress={() => setCategoryModalVisible(false)}>
+                  <Ionicons name="close" size={28} color="#666" />
+                </TouchableOpacity>
+              </View>
+              {KATEGORILER.map((kategori) => (
+                <TouchableOpacity
+                  key={kategori}
+                  style={[
+                    styles.categoryOption,
+                    formData.kategoriad === kategori && styles.categoryOptionSelected
+                  ]}
+                  onPress={() => {
+                    setFormData({ ...formData, kategoriad: kategori });
+                    setCategoryModalVisible(false);
+                  }}
+                >
+                  <Text style={[
+                    styles.categoryOptionText,
+                    formData.kategoriad === kategori && styles.categoryOptionTextSelected
+                  ]}>
+                    {kategori}
+                  </Text>
+                  {formData.kategoriad === kategori && (
+                    <Ionicons name="checkmark" size={24} color="#4ECDC4" />
+                  )}
+                </TouchableOpacity>
+              ))}
             </View>
-            {KATEGORILER.map((kategori) => (
-              <TouchableOpacity
-                key={kategori}
-                style={[
-                  styles.categoryOption,
-                  formData.kategoriad === kategori && styles.categoryOptionSelected
-                ]}
-                onPress={() => {
-                  setFormData({ ...formData, kategoriad: kategori });
-                  setCategoryModalVisible(false);
-                }}
-              >
-                <Text style={[
-                  styles.categoryOptionText,
-                  formData.kategoriad === kategori && styles.categoryOptionTextSelected
-                ]}>
-                  {kategori}
-                </Text>
-                {formData.kategoriad === kategori && (
-                  <Ionicons name="checkmark" size={24} color="#4ECDC4" />
-                )}
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-      </Modal>
+          </TouchableOpacity>
+        </Modal>
+      )}
     </View>
   );
 }

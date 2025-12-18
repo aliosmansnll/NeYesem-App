@@ -31,11 +31,15 @@ export default function RestaurantHomeScreen({ navigation }) {
   // Sayfa her açıldığında verileri yenile
   useFocusEffect(
     React.useCallback(() => {
-      fetchStats();
-    }, [restaurant.restorantID])
+      if (restaurant?.restorantID) {
+        fetchStats();
+      }
+    }, [restaurant?.restorantID])
   );
 
   const fetchStats = async (isRefreshing = false) => {
+    if (!restaurant?.restorantID) return;
+    
     if (!isRefreshing) setLoading(true);
     try {
       const [menuData, reviewsData] = await Promise.all([
