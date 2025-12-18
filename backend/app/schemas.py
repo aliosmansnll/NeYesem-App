@@ -26,9 +26,11 @@ class KullaniciResponse(KullaniciBase):
 class RestorantBase(BaseModel):
     ad: str
     mail: EmailStr
-    telefon: Optional[str] = None
+    telefon: str
     latitude: Optional[float] = None
     longitude: Optional[float] = None
+    sehir: Optional[str] = None
+    ilce: Optional[str] = None
 
 class RestorantCreate(RestorantBase):
     password: str
@@ -81,6 +83,31 @@ class YorumResponse(BaseModel):
     yorumTarih: datetime
     kullaniciAd: Optional[str] = None
     kullaniciSoyad: Optional[str] = None
+    
+    class Config:
+        from_attributes = True
+
+class RestorantFotoCreate(BaseModel):
+    restorantID: int
+    fotoURL: str
+
+class RestorantFotoResponse(BaseModel):
+    fotoID: int
+    restorantID: int
+    fotoURL: str
+    vitrin: Optional[bool] = False
+    
+    class Config:
+        from_attributes = True
+
+class MenuFotoCreate(BaseModel):
+    menuID: int
+    fotoURL: str
+
+class MenuFotoResponse(BaseModel):
+    fotoID: int
+    menuID: int
+    fotoURL: str
     
     class Config:
         from_attributes = True

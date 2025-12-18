@@ -8,11 +8,12 @@ import {
   RefreshControl,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
-import { getRestaurantReviews } from '../services/api';
+import { getRestaurantReviews, getRestaurantMenu } from '../services/api';
 
 export default function RestaurantReviewsScreen() {
   const { restaurant } = useAuth();
   const [reviews, setReviews] = useState([]);
+  const [menuItems, setMenuItems] = useState({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [stats, setStats] = useState({
@@ -31,16 +32,32 @@ export default function RestaurantReviewsScreen() {
     if (!restaurant?.restorantID) return;
     
     try {
-      const data = await getRestaurantReviews(restaurant.restorantID);
-      setReviews(data);
+      const [reviewsData, menuData] = await Promise.all([
+        getRestaurantReviews(restaurant.restorantID),
+        getRestaurantMenu(restaurant.restorantID)
+      ]);
+      
+      console.log('Toplam yorum sayısı:', reviewsData.length);
+      console.log('Menü yorumları:', reviewsData.filter(r => r.menuID).length);
+      console.log('Menü verileri:', menuData.length);
+      
+      setReviews(reviewsData);
+      
+      // Menü bilgilerini ID'ye göre mapping yap
+      const menuMap = {};
+      menuData.forEach(menu => {
+        menuMap[menu.menuID] = menu.yemekadi;
+      });
+      setMenuItems(menuMap);
+      console.log('Menü mapping:', menuMap);
 
       // İstatistikleri hesapla
-      const total = data.length;
-      const sum = data.reduce((acc, r) => acc + (r.puan || 0), 0);
+      const total = reviewsData.length;
+      const sum = reviewsData.reduce((acc, r) => acc + (r.puan || 0), 0);
       const average = total > 0 ? (sum / total).toFixed(1) : '0';
 
       const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-      data.forEach((r) => {
+      reviewsData.forEach((r) => {
         if (r.puan) distribution[r.puan]++;
       });
 
@@ -66,14 +83,16 @@ export default function RestaurantReviewsScreen() {
   const renderReview = ({ item }) => (
     <View style={styles.reviewCard}>
       <View style={styles.reviewHeader}>
-        <View>
+        <View style={styles.reviewHeaderLeft}>
           <Text style={styles.reviewUser}>
             {item.kullaniciAd && item.kullaniciSoyad
               ? `${item.kullaniciAd} ${item.kullaniciSoyad}`
               : `Kullanıcı #${item.kullaniciID || 0}`}
           </Text>
-          {item.menuID && (
-            <Text style={styles.menuBadge}>Menü Yorumu</Text>
+          {item.menuID && menuItems[item.menuID] && (
+            <View style={styles.menuBadgeContainer}>
+              <Text style={styles.menuBadge}>🍴 {menuItems[item.menuID]}</Text>
+            </View>
           )}
         </View>
         <Text style={styles.reviewDate}>
@@ -234,17 +253,25 @@ const styles = StyleSheet.create({
   reviewHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'flex-start',
     marginBottom: 8,
+  },
+  reviewHeaderLeft: {
+    flex: 1,
+    marginRight: 10,
   },
   reviewUser: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#333',
   },
+  menuBadgeContainer: {
+    marginTop: 4,
+  },
   menuBadge: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#4ECDC4',
-    marginTop: 2,
+    fontWeight: '600',
   },
   reviewDate: {
     fontSize: 12,

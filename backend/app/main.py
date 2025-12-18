@@ -1,7 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from app.db import engine, Base
 from app.routers import users, restaurants, menu, reviews
+from pathlib import Path
 
 # Tabloları oluştur
 Base.metadata.create_all(bind=engine)
@@ -16,6 +18,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Static dosyalar için upload klasörünü mount et
+UPLOAD_DIR = Path("uploads")
+UPLOAD_DIR.mkdir(exist_ok=True)
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 # Routers
 app.include_router(users.router)

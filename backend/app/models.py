@@ -29,6 +29,8 @@ class RestorantHesap(Base):
     latitude = Column(Float)  # Enlem
     longitude = Column(Float)  # Boylam
     telefon = Column(CHAR(15))
+    sehir = Column(String(50))  # Şehir
+    ilce = Column(String(50))  # İlçe/Bölge
     kayitTarih = Column(DateTime, default=datetime.utcnow)
     
     menuler = relationship("RestorantMenu", back_populates="restoran")
@@ -78,5 +80,6 @@ class RestorantFoto(Base):
     fotoID = Column(Integer, primary_key=True, index=True)
     restorantID = Column(Integer, ForeignKey("RestorantHesap.restorantID"), nullable=False)
     fotoURL = Column(String(500), nullable=False)
+    vitrin = Column(Boolean, default=False)
     
     restoran = relationship("RestorantHesap", back_populates="fotolar")

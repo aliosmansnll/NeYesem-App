@@ -17,6 +17,8 @@ import AddReviewScreen from '../screens/AddReviewScreen';
 import RestaurantHomeScreen from '../screens/RestaurantHomeScreen';
 import RestaurantMenuManagementScreen from '../screens/RestaurantMenuManagementScreen';
 import RestaurantReviewsScreen from '../screens/RestaurantReviewsScreen';
+import RestaurantPhotoManagementScreen from '../screens/RestaurantPhotoManagementScreen';
+import RestaurantEditScreen from '../screens/RestaurantEditScreen';
 
 const Stack = createStackNavigator();
 
@@ -69,9 +71,9 @@ export default function AppNavigator() {
           <Stack.Screen
             name="RestaurantDetail"
             component={RestaurantDetailScreen}
-            options={({ route }) => ({
-              title: route.params?.restaurant?.ad || 'Restoran Detay',
-            })}
+            options={{
+              headerShown: false,
+            }}
           />
           <Stack.Screen
             name="MenuDetail"
@@ -123,11 +125,25 @@ export default function AppNavigator() {
             }}
           />
           <Stack.Screen
+            name="RestaurantPhotoManagement"
+            component={RestaurantPhotoManagementScreen}
+            options={{
+              title: 'Fotoğraf Galerisi',
+            }}
+          />
+          <Stack.Screen
+            name="RestaurantEdit"
+            component={RestaurantEditScreen}
+            options={{
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
             name="RestaurantDetail"
             component={RestaurantDetailScreen}
-            options={({ route }) => ({
-              title: route.params?.restaurant?.ad || 'Restoran Detay',
-            })}
+            options={{
+              headerShown: false,
+            }}
           />
           <Stack.Screen
             name="MenuDetail"

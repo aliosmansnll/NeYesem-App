@@ -8,10 +8,11 @@ import {
   RefreshControl,
   TouchableOpacity,
   Alert,
+  Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { getAllRestaurants } from '../services/api';
+import { getAllRestaurants, getRestaurantPhotos, API_URL } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import Card from '../components/Card';
 import { colors, gradients } from '../theme/colors';
@@ -19,6 +20,7 @@ import { spacing, borderRadius, shadows } from '../theme/spacing';
 
 export default function HomeScreen({ navigation }) {
   const [restaurants, setRestaurants] = useState([]);
+  const [restaurantPhotos, setRestaurantPhotos] = useState({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -46,23 +48,37 @@ export default function HomeScreen({ navigation }) {
       const skip = isInitial ? 0 : (page + 1) * PAGE_SIZE;
       const data = await getAllRestaurants(skip, PAGE_SIZE);
       
-      // Ortalama puana göre sırala (yüksekten düşüğe)
-      const sorted = data.sort((a, b) => {
-        const avgA = a.ortalamaPuan || 0;
-        const avgB = b.ortalamaPuan || 0;
-        return avgB - avgA;
-      });
+      // Backend zaten sıralı gönderiyor, frontend'de sıralamaya gerek yok
 
       if (isInitial) {
-        setRestaurants(sorted);
+        setRestaurants(data);
         setPage(0);
       } else {
-        setRestaurants(prev => [...prev, ...sorted]);
+        setRestaurants(prev => [...prev, ...data]);
         setPage(prev => prev + 1);
       }
 
+      // Her restoran için fotoğrafları çek
+      const photos = {};
+      await Promise.all(
+        data.map(async (restaurant) => {
+          try {
+            const photoData = await getRestaurantPhotos(restaurant.restorantID);
+            if (photoData && photoData.length > 0) {
+              // Vitrin fotoğraf varsa onu, yoksa ilk fotoğrafı al
+              const vitrinPhoto = photoData.find(p => p.vitrin);
+              photos[restaurant.restorantID] = vitrinPhoto || photoData[0];
+            }
+          } catch (error) {
+            console.log(`Fotoğraf yüklenemedi: ${restaurant.restorantID}`);
+          }
+        })
+      );
+      
+      setRestaurantPhotos(prev => ({ ...prev, ...photos }));
+
       // Eğer gelen veri sayısı PAGE_SIZE'dan azsa, daha fazla veri yok demektir
-      setHasMore(sorted.length === PAGE_SIZE);
+      setHasMore(data.length === PAGE_SIZE);
     } catch (error) {
       Alert.alert('Hata', 'Restoranlar yüklenemedi');
       console.error(error);
@@ -102,6 +118,7 @@ export default function HomeScreen({ navigation }) {
   const renderRestaurant = ({ item }) => {
     const rating = item.ortalamaPuan || 0;
     const reviewCount = item.yorumSayisi || 0;
+    const photo = restaurantPhotos[item.restorantID];
     
     // 0-5 arası direkt göster, 5'ten fazla ise 5'in katlarına yuvarla
     let displayCount;
@@ -120,15 +137,22 @@ export default function HomeScreen({ navigation }) {
     >
       {/* Restaurant Image */}
       <View style={styles.imageContainer}>
-        <LinearGradient
-          colors={['#FF6B9D', '#C06C84']}
-          style={styles.imagePlaceholder}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-        >
-          <Ionicons name="restaurant" size={40} color="white" />
-        </LinearGradient>
-        
+        {photo ? (
+          <Image
+            source={{ uri: `${photo.fotoURL.startsWith('http') ? '' : API_URL}${photo.fotoURL}` }}
+            style={styles.restaurantImage}
+            resizeMode="cover"
+          />
+        ) : (
+          <LinearGradient
+            colors={['#FF6B9D', '#C06C84']}
+            style={styles.imagePlaceholder}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          >
+            <Ionicons name="restaurant" size={40} color="white" />
+          </LinearGradient>
+        )}
         {/* Rating Badge */}
         <View style={styles.ratingBadge}>
           <Ionicons name="star" size={12} color="#FFD700" />
@@ -142,6 +166,14 @@ export default function HomeScreen({ navigation }) {
         <Text style={styles.restaurantCardName} numberOfLines={1}>
           {item.ad || 'Restoran'}
         </Text>
+        {(item.sehir || item.ilce) && (
+          <View style={styles.phoneRow}>
+            <Ionicons name="location-outline" size={12} color="#FF6B6B" />
+            <Text style={styles.locationText} numberOfLines={1}>
+              {[item.ilce, item.sehir ? item.sehir.replace(/\s*Merkez\s*$/i, '').trim() : ''].filter(Boolean).join(', ')}
+            </Text>
+          </View>
+        )}
         {item.telefon && (
           <View style={styles.phoneRow}>
             <Ionicons name="call-outline" size={12} color={colors.textMuted} />
@@ -402,6 +434,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  restaurantImage: {
+    width: '100%',
+    height: 140,
+  },
   ratingBadge: {
     position: 'absolute',
     top: spacing.sm,
@@ -443,6 +479,11 @@ const styles = StyleSheet.create({
   phoneText: {
     fontSize: 12,
     color: colors.textMuted,
+    fontWeight: '500',
+  },
+  locationText: {
+    fontSize: 12,
+    color: '#FF6B6B',
     fontWeight: '500',
   },
   loadMoreContainer: {

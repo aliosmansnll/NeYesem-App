@@ -70,6 +70,8 @@ export const AuthProvider = ({ children }) => {
         telefon: response.telefon || '',
         latitude: response.latitude || null,
         longitude: response.longitude || null,
+        sehir: response.sehir || null,
+        ilce: response.ilce || null,
       };
       
       await AsyncStorage.multiSet([
@@ -117,6 +119,8 @@ export const AuthProvider = ({ children }) => {
         telefon: response.telefon || '',
         latitude: response.latitude || null,
         longitude: response.longitude || null,
+        sehir: response.sehir || null,
+        ilce: response.ilce || null,
       };
       
       await AsyncStorage.multiSet([

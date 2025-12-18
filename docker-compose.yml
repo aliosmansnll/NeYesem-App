@@ -30,6 +30,7 @@ services:
       - "8000:8000"
     volumes:
       - ./backend/app:/app/app
+      - ./backend/uploads:/app/uploads
 
   pgadmin:
     image: dpage/pgadmin4:8

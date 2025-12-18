@@ -100,6 +100,14 @@ export default function RestaurantHomeScreen({ navigation }) {
             <Text style={styles.restaurantInfo}>
               {restaurant?.telefon || 'Telefon belirtilmemiş'}
             </Text>
+            {(restaurant?.ilce || restaurant?.sehir) && (
+              <View style={styles.locationContainer}>
+                <Ionicons name="location" size={12} color="#fff" style={styles.locationIcon} />
+                <Text style={styles.locationInfo}>
+                  {[restaurant.ilce, restaurant.sehir ? restaurant.sehir.replace(/\s*Merkez\s*$/i, '').trim() : ''].filter(Boolean).join(', ')}
+                </Text>
+              </View>
+            )}
           </View>
           <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
             <Ionicons name="log-out-outline" size={24} color="#4ECDC4" />
@@ -209,6 +217,20 @@ export default function RestaurantHomeScreen({ navigation }) {
 
                 <TouchableOpacity
                   style={styles.secondaryActionButton}
+                  onPress={() => navigation.navigate('RestaurantPhotoManagement')}
+                  activeOpacity={0.8}
+                >
+                  <View style={[styles.actionIconBox, { backgroundColor: '#FFF5F0' }]}>
+                    <Ionicons name="camera-outline" size={28} color="#FFA94D" />
+                  </View>
+                  <Text style={styles.secondaryActionText}>Galeri</Text>
+                  <Text style={styles.secondaryActionSubtext}>
+                    Fotoğraflar
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.secondaryActionButton}
                   onPress={() => {
                     navigation.navigate('RestaurantDetail', {
                       restaurant: {
@@ -216,6 +238,10 @@ export default function RestaurantHomeScreen({ navigation }) {
                         ad: restaurant.ad,
                         mail: restaurant.mail,
                         telefon: restaurant.telefon,
+                        latitude: restaurant.latitude,
+                        longitude: restaurant.longitude,
+                        sehir: restaurant.sehir,
+                        ilce: restaurant.ilce,
                       },
                     });
                   }}
@@ -237,6 +263,13 @@ export default function RestaurantHomeScreen({ navigation }) {
               <View style={styles.infoHeader}>
                 <Ionicons name="information-circle" size={24} color="#4ECDC4" />
                 <Text style={styles.infoTitle}>Restoran Bilgileri</Text>
+                <TouchableOpacity
+                  style={styles.editButton}
+                  onPress={() => navigation.navigate('RestaurantEdit')}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="create-outline" size={20} color="#4ECDC4" />
+                </TouchableOpacity>
               </View>
               <View style={styles.infoRow}>
                 <Ionicons name="mail-outline" size={20} color="#666" />
@@ -249,7 +282,9 @@ export default function RestaurantHomeScreen({ navigation }) {
               <View style={styles.infoRow}>
                 <Ionicons name="location-outline" size={20} color="#666" />
                 <Text style={styles.infoText}>
-                  {restaurant?.koordinat ? `${restaurant.koordinat}` : 'Konum belirtilmemiş'}
+                  {(restaurant?.ilce || restaurant?.sehir) 
+                    ? [restaurant.ilce, restaurant.sehir ? restaurant.sehir.replace(/\s*Merkez\s*$/i, '').trim() : ''].filter(Boolean).join(', ')
+                    : 'Konum belirtilmemiş'}
                 </Text>
               </View>
             </View>
@@ -292,6 +327,20 @@ const styles = StyleSheet.create({
     color: '#fff',
     opacity: 0.8,
     marginTop: 4,
+  },
+  locationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 6,
+  },
+  locationIcon: {
+    marginRight: 4,
+    opacity: 0.9,
+  },
+  locationInfo: {
+    fontSize: 13,
+    color: '#fff',
+    opacity: 0.85,
   },
   logoutButton: {
     backgroundColor: '#fff',
@@ -441,14 +490,16 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   secondaryActionText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: 'bold',
     color: '#333',
     marginBottom: 4,
+    textAlign: 'center',
   },
   secondaryActionSubtext: {
     fontSize: 12,
     color: '#666',
+    textAlign: 'center',
   },
   infoCard: {
     margin: 20,
@@ -469,6 +520,15 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
+  },
+  editButton: {
+    marginLeft: 'auto',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F0FFFE',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   infoTitle: {
     fontSize: 16,

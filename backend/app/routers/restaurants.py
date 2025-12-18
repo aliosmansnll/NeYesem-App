@@ -1,10 +1,17 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.orm import Session
 from typing import List
 from app import models, schemas, utils
 from app.db import SessionLocal
+import os
+import uuid
+from pathlib import Path
 
 router = APIRouter(prefix="/restaurants", tags=["Restaurants"])
+
+# Fotoğrafların kaydedileceği dizin
+UPLOAD_DIR = Path("uploads/restaurant_photos")
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 def get_db():
     db = SessionLocal()
@@ -29,6 +36,8 @@ def register_restaurant(restaurant: schemas.RestorantCreate, db: Session = Depen
         telefon=restaurant.telefon,
         latitude=restaurant.latitude,
         longitude=restaurant.longitude,
+        sehir=restaurant.sehir,
+        ilce=restaurant.ilce,
         password_salt=salt,
         password_hash=password_hash
     )
@@ -54,24 +63,39 @@ def login_restaurant(credentials: schemas.RestorantLogin, db: Session = Depends(
         "mail": restaurant.mail,
         "telefon": restaurant.telefon,
         "latitude": restaurant.latitude,
-        "longitude": restaurant.longitude
+        "longitude": restaurant.longitude,
+        "sehir": restaurant.sehir,
+        "ilce": restaurant.ilce
     }
 
 @router.get("/")
 def get_all_restaurants(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    """Tüm restoranları listele - ortalama puan ve yorum sayısı ile birlikte"""
-    from sqlalchemy import func
+    """Tüm restoranları listele - ortalama puan ve yorum sayısı ile birlikte, yüksek puandan düşüğe sıralı"""
+    from sqlalchemy import func, case, desc
     
-    restaurants = db.query(models.RestorantHesap).offset(skip).limit(limit).all()
+    # Subquery ile ortalama puanı hesapla
+    avg_rating_subquery = db.query(
+        models.Yorum.restorantID,
+        func.avg(models.Yorum.puan).label('ortalama_puan')
+    ).filter(
+        models.Yorum.puan.isnot(None)
+    ).group_by(
+        models.Yorum.restorantID
+    ).subquery()
+    
+    # Restoranları ortalama puana göre sıralı getir
+    restaurants_query = db.query(
+        models.RestorantHesap,
+        func.coalesce(avg_rating_subquery.c.ortalama_puan, 0).label('avg_puan')
+    ).outerjoin(
+        avg_rating_subquery,
+        models.RestorantHesap.restorantID == avg_rating_subquery.c.restorantID
+    ).order_by(
+        desc('avg_puan')
+    ).offset(skip).limit(limit)
     
     result = []
-    for restaurant in restaurants:
-        # Restorana ait yorumların ortalama puanını hesapla
-        avg_rating = db.query(func.avg(models.Yorum.puan)).filter(
-            models.Yorum.restorantID == restaurant.restorantID,
-            models.Yorum.puan.isnot(None)
-        ).scalar()
-        
+    for restaurant, avg_rating in restaurants_query.all():
         # Restorana ait yorum sayısını hesapla
         yorum_sayisi = db.query(func.count(models.Yorum.yorumID)).filter(
             models.Yorum.restorantID == restaurant.restorantID
@@ -84,6 +108,8 @@ def get_all_restaurants(skip: int = 0, limit: int = 100, db: Session = Depends(g
             "telefon": restaurant.telefon,
             "latitude": restaurant.latitude,
             "longitude": restaurant.longitude,
+            "sehir": restaurant.sehir,
+            "ilce": restaurant.ilce,
             "kayitTarih": restaurant.kayitTarih,
             "ortalamaPuan": float(avg_rating) if avg_rating else 0.0,
             "yorumSayisi": int(yorum_sayisi) if yorum_sayisi else 0
@@ -134,3 +160,98 @@ def delete_restaurant(restoran_id: int, db: Session = Depends(get_db)):
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Silme işlemi başarısız: {str(e)}")
+
+# ==================== RESTORAN FOTOĞRAF ENDPOİNTLERİ ====================
+
+@router.post("/{restoran_id}/photos", response_model=schemas.RestorantFotoResponse, status_code=status.HTTP_201_CREATED)
+async def upload_restaurant_photo(
+    restoran_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    """Restoran için fotoğraf yükle"""
+    # Restoran var mı kontrol et
+    restaurant = db.query(models.RestorantHesap).filter(models.RestorantHesap.restorantID == restoran_id).first()
+    if not restaurant:
+        raise HTTPException(status_code=404, detail="Restoran bulunamadı")
+    
+    # Dosya uzantısını kontrol et
+    allowed_extensions = ['.jpg', '.jpeg', '.png', '.webp']
+    file_ext = os.path.splitext(file.filename)[1].lower()
+    if file_ext not in allowed_extensions:
+        raise HTTPException(status_code=400, detail="Sadece JPG, PNG ve WEBP formatları desteklenir")
+    
+    # Benzersiz dosya adı oluştur
+    unique_filename = f"{uuid.uuid4()}{file_ext}"
+    file_path = UPLOAD_DIR / unique_filename
+    
+    # Dosyayı kaydet
+    try:
+        contents = await file.read()
+        with open(file_path, "wb") as f:
+            f.write(contents)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Dosya yüklenirken hata: {str(e)}")
+    
+    # Veritabanına kaydet
+    foto_url = f"/uploads/restaurant_photos/{unique_filename}"
+    db_foto = models.RestorantFoto(
+        restorantID=restoran_id,
+        fotoURL=foto_url
+    )
+    db.add(db_foto)
+    db.commit()
+    db.refresh(db_foto)
+    
+    return db_foto
+
+@router.get("/{restoran_id}/photos", response_model=List[schemas.RestorantFotoResponse])
+def get_restaurant_photos(restoran_id: int, db: Session = Depends(get_db)):
+    """Restoran fotoğraflarını listele"""
+    restaurant = db.query(models.RestorantHesap).filter(models.RestorantHesap.restorantID == restoran_id).first()
+    if not restaurant:
+        raise HTTPException(status_code=404, detail="Restoran bulunamadı")
+    
+    photos = db.query(models.RestorantFoto).filter(models.RestorantFoto.restorantID == restoran_id).all()
+    return photos
+
+@router.delete("/photos/{foto_id}", status_code=status.HTTP_200_OK)
+def delete_restaurant_photo(foto_id: int, db: Session = Depends(get_db)):
+    """Restoran fotoğrafını sil"""
+    photo = db.query(models.RestorantFoto).filter(models.RestorantFoto.fotoID == foto_id).first()
+    if not photo:
+        raise HTTPException(status_code=404, detail="Fotoğraf bulunamadı")
+    
+    # Dosyayı diskten sil
+    try:
+        file_path = Path(photo.fotoURL.lstrip('/'))
+        if file_path.exists():
+            file_path.unlink()
+    except Exception as e:
+        print(f"Dosya silinirken hata: {str(e)}")
+    
+    # Veritabanından sil
+    db.delete(photo)
+    db.commit()
+    
+    return {"message": "Fotoğraf başarıyla silindi", "fotoID": foto_id}
+
+@router.patch("/photos/{foto_id}/set-vitrin", response_model=schemas.RestorantFotoResponse)
+def set_vitrin_photo(foto_id: int, db: Session = Depends(get_db)):
+    """Fotoğrafı vitrin fotoğraf olarak işaretle"""
+    photo = db.query(models.RestorantFoto).filter(models.RestorantFoto.fotoID == foto_id).first()
+    if not photo:
+        raise HTTPException(status_code=404, detail="Fotoğraf bulunamadı")
+    
+    # Aynı restoranın diğer tüm fotoğraflarını vitrin olmayan yap
+    db.query(models.RestorantFoto).filter(
+        models.RestorantFoto.restorantID == photo.restorantID,
+        models.RestorantFoto.fotoID != foto_id
+    ).update({"vitrin": False}, synchronize_session=False)
+    
+    # Bu fotoğrafı vitrin yap
+    photo.vitrin = True
+    db.commit()
+    db.refresh(photo)
+    
+    return photo

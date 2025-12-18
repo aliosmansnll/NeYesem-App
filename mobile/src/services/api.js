@@ -3,7 +3,8 @@ import axios from 'axios';
 // Backend API URL
 // ÖNEMLI: Telefonun internet paylaşımı (hotspot) kullanıyorsan aşağıdaki IP'yi kullan
 // WiFi kullanıyorsan, bilgisayarın WiFi IP'sini yaz (ipconfig komutuyla öğrenebilirsin)
-const API_URL = 'http://172.20.10.5:8000';
+// Docker kullanıyorsan backend container'ı 8000 portunda çalışıyor
+const API_URL = 'http://172.20.10.5:8000'; // Bu IP'yi kendi bilgisayarının IP'si ile değiştir
 
 const api = axios.create({
   baseURL: API_URL,
@@ -222,5 +223,61 @@ export const getUserReviews = async (userId) => {
     throw error.response?.data?.detail || 'Yorumlar getirilemedi';
   }
 };
+
+// ==================== RESTORAN FOTOĞRAF ENDPOINTS ====================
+
+export const uploadRestaurantPhoto = async (restaurantId, imageUri) => {
+  try {
+    const formData = new FormData();
+    const filename = imageUri.split('/').pop();
+    const match = /\.(\w+)$/.exec(filename);
+    const type = match ? `image/${match[1]}` : 'image/jpeg';
+
+    formData.append('file', {
+      uri: imageUri,
+      name: filename,
+      type: type,
+    });
+
+    const response = await api.post(`/restaurants/${restaurantId}/photos`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data?.detail || 'Fotoğraf yüklenemedi';
+  }
+};
+
+export const getRestaurantPhotos = async (restaurantId) => {
+  try {
+    const response = await api.get(`/restaurants/${restaurantId}/photos`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data?.detail || 'Fotoğraflar getirilemedi';
+  }
+};
+
+export const deleteRestaurantPhoto = async (photoId) => {
+  try {
+    const response = await api.delete(`/restaurants/photos/${photoId}`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data?.detail || 'Fotoğraf silinemedi';
+  }
+};
+
+export const setVitrinPhoto = async (photoId) => {
+  try {
+    const response = await api.patch(`/restaurants/photos/${photoId}/set-vitrin`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data?.detail || 'Vitrin fotoğraf işaretlenemedi';
+  }
+};
+
+// API_URL'i export et ki diğer dosyalarda da kullanılabilsin
+export { API_URL };
 
 export default api;
