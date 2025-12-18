@@ -2,15 +2,20 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
-  TouchableOpacity,
   StyleSheet,
   Alert,
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
+  TouchableOpacity,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
+import Button from '../components/Button';
+import Input from '../components/Input';
+import { colors, gradients } from '../theme/colors';
+import { spacing, borderRadius, shadows } from '../theme/spacing';
 
 export default function RestaurantLoginScreen({ navigation }) {
   const [mail, setMail] = useState('');
@@ -34,145 +39,176 @@ export default function RestaurantLoginScreen({ navigation }) {
   };
 
   return (
-    <KeyboardAvoidingView
+    <LinearGradient
+      colors={gradients.light}
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <View style={styles.content}>
-        <Text style={styles.icon}>🏪</Text>
-        <Text style={styles.title}>Restoran Girişi</Text>
-        <Text style={styles.subtitle}>Restoranınızı yönetin</Text>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.header}>
+            <TouchableOpacity 
+              style={styles.backButton}
+              onPress={() => navigation.navigate('Welcome')}
+            >
+              <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
+            </TouchableOpacity>
+          </View>
 
-        <View style={styles.form}>
-          <TextInput
-            style={styles.input}
-            placeholder="E-posta"
-            value={mail}
-            onChangeText={setMail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
+          <View style={styles.content}>
+            <View style={styles.iconContainer}>
+              <LinearGradient
+                colors={gradients.secondary}
+                style={styles.iconGradient}
+              >
+                <Ionicons name="storefront" size={48} color={colors.white} />
+              </LinearGradient>
+            </View>
 
-          <TextInput
-            style={styles.input}
-            placeholder="Şifre"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            autoCapitalize="none"
-          />
+            <Text style={styles.title}>Restoran Girişi</Text>
+            <Text style={styles.subtitle}>Restoranınızı yönetin</Text>
 
-          <TouchableOpacity
-            style={styles.button}
-            onPress={handleLogin}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>Giriş Yap</Text>
-            )}
-          </TouchableOpacity>
+            <View style={styles.formContainer}>
+              <Input
+                label="E-posta"
+                iconName="mail"
+                placeholder="ornek@restoran.com"
+                value={mail}
+                onChangeText={setMail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
 
-          <TouchableOpacity
-            style={styles.registerLink}
-            onPress={() => navigation.navigate('RestaurantRegister')}
-          >
-            <Text style={styles.registerText}>
-              Restoranınız yok mu? <Text style={styles.registerTextBold}>Kayıt Ol</Text>
-            </Text>
-          </TouchableOpacity>
+              <Input
+                label="Şifre"
+                iconName="lock-closed"
+                placeholder="••••••••"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                autoCapitalize="none"
+              />
 
-          <TouchableOpacity
-            style={styles.backLink}
-            onPress={() => navigation.navigate('Welcome')}
-          >
-            <Text style={styles.backText}>← Geri Dön</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </KeyboardAvoidingView>
+              <Button
+                title="Giriş Yap"
+                variant="secondary"
+                size="large"
+                fullWidth
+                loading={loading}
+                onPress={handleLogin}
+              />
+
+              <View style={styles.divider}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>veya</Text>
+                <View style={styles.dividerLine} />
+              </View>
+
+              <TouchableOpacity
+                style={styles.registerLink}
+                onPress={() => navigation.navigate('RestaurantRegister')}
+              >
+                <Text style={styles.registerText}>
+                  Restoranınız yok mu? <Text style={styles.registerTextBold}>Kayıt Ol</Text>
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
+  header: {
+    paddingTop: spacing.xxxl,
+    paddingHorizontal: spacing.lg,
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: borderRadius.round,
+    backgroundColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.small,
   },
   content: {
     flex: 1,
-    justifyContent: 'center',
-    padding: 20,
+    padding: spacing.xl,
+    paddingTop: spacing.lg,
   },
-  icon: {
-    fontSize: 80,
-    textAlign: 'center',
-    marginBottom: 20,
+  iconContainer: {
+    alignSelf: 'center',
+    marginBottom: spacing.lg,
+  },
+  iconGradient: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.large,
   },
   title: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    color: '#4ECDC4',
+    fontSize: 32,
+    fontWeight: '900',
+    color: colors.textPrimary,
     textAlign: 'center',
-    marginBottom: 10,
+    marginBottom: spacing.xs,
+    letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
+    color: colors.textSecondary,
     textAlign: 'center',
-    marginBottom: 40,
+    marginBottom: spacing.xl,
   },
-  form: {
-    backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
+  formContainer: {
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.xl,
+    padding: spacing.xl,
+    ...shadows.large,
   },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 15,
-    marginBottom: 15,
-    fontSize: 16,
-    backgroundColor: '#f9f9f9',
-  },
-  button: {
-    backgroundColor: '#4ECDC4',
-    padding: 15,
-    borderRadius: 8,
+  divider: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 10,
+    marginVertical: spacing.lg,
   },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.veryLightGray,
+  },
+  dividerText: {
+    marginHorizontal: spacing.md,
+    color: colors.textMuted,
+    fontSize: 14,
+    fontWeight: '500',
   },
   registerLink: {
-    marginTop: 20,
     alignItems: 'center',
+    paddingVertical: spacing.md,
   },
   registerText: {
-    color: '#666',
-    fontSize: 14,
+    fontSize: 15,
+    color: colors.textSecondary,
   },
   registerTextBold: {
-    color: '#4ECDC4',
-    fontWeight: 'bold',
-  },
-  backLink: {
-    marginTop: 15,
-    alignItems: 'center',
-  },
-  backText: {
-    color: '#999',
-    fontSize: 14,
+    color: colors.secondary,
+    fontWeight: '700',
   },
 });

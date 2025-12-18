@@ -75,7 +75,7 @@ export default function RestaurantDetailScreen({ route, navigation }) {
   };
 
   const calculateAverageRating = (reviewsList) => {
-    if (!reviewsList || reviewsList.length === 0) return 0;
+    if (!reviewsList || reviewsList.length === 0) return '0';
     const total = reviewsList.reduce((sum, review) => sum + (review.puan || 0), 0);
     return (total / reviewsList.length).toFixed(1);
   };
@@ -92,18 +92,18 @@ export default function RestaurantDetailScreen({ route, navigation }) {
     <View style={styles.container}>
       {/* Restaurant Header */}
       <View style={styles.header}>
-        <Text style={styles.restaurantName}>{restaurant.ad}</Text>
+        <Text style={styles.restaurantName}>{restaurant.ad || 'Restoran'}</Text>
         {restaurant.telefon && (
-          <Text style={styles.headerInfo}>📞 {restaurant.telefon}</Text>
+          <Text style={styles.headerInfo}>📞 {String(restaurant.telefon)}</Text>
         )}
-        <Text style={styles.headerInfo}>📧 {restaurant.mail}</Text>
+        <Text style={styles.headerInfo}>📧 {restaurant.mail || 'Email yok'}</Text>
         
         <View style={styles.ratingContainer}>
           <Text style={styles.averageRating}>
-            Ortalama Puan: {calculateAverageRating(restaurantReviews)} / 5.0
+            Ortalama Puan: {String(calculateAverageRating(restaurantReviews))} / 5.0
           </Text>
           <Text style={styles.reviewCount}>
-            ({restaurantReviews.length} değerlendirme)
+            ({String(restaurantReviews.length)} değerlendirme)
           </Text>
         </View>
       </View>
@@ -115,7 +115,7 @@ export default function RestaurantDetailScreen({ route, navigation }) {
           onPress={() => setActiveTab('menu')}
         >
           <Text style={[styles.tabText, activeTab === 'menu' && styles.activeTabText]}>
-            Menü ({menu.length})
+            Menü ({String(menu.length)})
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -123,7 +123,7 @@ export default function RestaurantDetailScreen({ route, navigation }) {
           onPress={() => setActiveTab('reviews')}
         >
           <Text style={[styles.tabText, activeTab === 'reviews' && styles.activeTabText]}>
-            Yorumlar ({restaurantReviews.length})
+            Yorumlar ({String(restaurantReviews.length)})
           </Text>
         </TouchableOpacity>
       </View>
@@ -143,19 +143,19 @@ export default function RestaurantDetailScreen({ route, navigation }) {
             ) : (
               menu.map((item) => (
                 <TouchableOpacity
-                  key={item.menuID}
+                  key={String(item.menuID || Math.random())}
                   style={styles.menuCard}
                   onPress={() => handleMenuItemPress(item)}
                 >
                   <View style={styles.menuHeader}>
-                    <Text style={styles.menuName}>{item.yemekadi}</Text>
-                    <Text style={styles.menuPrice}>{item.fiyat} ₺</Text>
+                    <Text style={styles.menuName}>{item.yemekadi || 'Yemek'}</Text>
+                    <Text style={styles.menuPrice}>{String(item.fiyat || 0)} ₺</Text>
                   </View>
                   {item.aciklama && (
-                    <Text style={styles.menuDescription}>{item.aciklama}</Text>
+                    <Text style={styles.menuDescription}>{item.aciklama || '-'}</Text>
                   )}
                   {item.kategoriad && (
-                    <Text style={styles.menuCategory}>🏷️ {item.kategoriad}</Text>
+                    <Text style={styles.menuCategory}>🏷️ {item.kategoriad || '-'}</Text>
                   )}
                 </TouchableOpacity>
               ))
@@ -178,22 +178,22 @@ export default function RestaurantDetailScreen({ route, navigation }) {
               </View>
             ) : (
               restaurantReviews.map((review) => (
-                <View key={review.yorumID} style={styles.reviewCard}>
+                <View key={String(review.yorumID || Math.random())} style={styles.reviewCard}>
                   <View style={styles.reviewHeader}>
                     <Text style={styles.reviewUser}>
                       {review.kullaniciAd && review.kullaniciSoyad 
                         ? `${review.kullaniciAd} ${review.kullaniciSoyad}`
-                        : `Kullanıcı #${review.kullaniciID}`}
+                        : `Kullanıcı #${review.kullaniciID || 0}`}
                     </Text>
                     <Text style={styles.reviewDate}>
-                      {new Date(review.yorumTarih).toLocaleDateString('tr-TR')}
+                      {review.yorumTarih ? new Date(review.yorumTarih).toLocaleDateString('tr-TR') : 'Tarih yok'}
                     </Text>
                   </View>
                   {review.puan && (
                     <Text style={styles.reviewRating}>{renderStars(review.puan)}</Text>
                   )}
                   {review.yorum && (
-                    <Text style={styles.reviewText}>{review.yorum}</Text>
+                    <Text style={styles.reviewText}>{review.yorum || '-'}</Text>
                   )}
                 </View>
               ))

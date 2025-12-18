@@ -58,7 +58,7 @@ export default function MenuDetailScreen({ route, navigation }) {
   };
 
   const calculateAverageRating = () => {
-    if (reviews.length === 0) return 0;
+    if (reviews.length === 0) return '0';
     const total = reviews.reduce((sum, review) => sum + (review.puan || 0), 0);
     return (total / reviews.length).toFixed(1);
   };
@@ -75,23 +75,23 @@ export default function MenuDetailScreen({ route, navigation }) {
     <View style={styles.container}>
       {/* Menu Item Header */}
       <View style={styles.header}>
-        <Text style={styles.menuName}>{menuItem.yemekadi}</Text>
-        <Text style={styles.price}>{menuItem.fiyat} ₺</Text>
+        <Text style={styles.menuName}>{menuItem.yemekadi || 'Yemek'}</Text>
+        <Text style={styles.price}>{String(menuItem.fiyat || 0)} ₺</Text>
         
         {menuItem.aciklama && (
-          <Text style={styles.description}>{menuItem.aciklama}</Text>
+          <Text style={styles.description}>{menuItem.aciklama || '-'}</Text>
         )}
         
         {menuItem.kategoriad && (
-          <Text style={styles.category}>🏷️ {menuItem.kategoriad}</Text>
+          <Text style={styles.category}>🏷️ {menuItem.kategoriad || '-'}</Text>
         )}
         
         <View style={styles.ratingContainer}>
           <Text style={styles.averageRating}>
-            Ortalama Puan: {calculateAverageRating()} / 5.0
+            Ortalama Puan: {String(calculateAverageRating())} / 5.0
           </Text>
           <Text style={styles.reviewCount}>
-            ({reviews.length} değerlendirme)
+            ({String(reviews.length)} değerlendirme)
           </Text>
         </View>
       </View>
@@ -117,22 +117,22 @@ export default function MenuDetailScreen({ route, navigation }) {
         ) : (
           <View style={styles.reviewsContainer}>
             {reviews.map((review) => (
-              <View key={review.yorumID} style={styles.reviewCard}>
+              <View key={String(review.yorumID || Math.random())} style={styles.reviewCard}>
                 <View style={styles.reviewHeader}>
                   <Text style={styles.reviewUser}>
                     {review.kullaniciAd && review.kullaniciSoyad 
                       ? `${review.kullaniciAd} ${review.kullaniciSoyad}`
-                      : `Kullanıcı #${review.kullaniciID}`}
+                      : `Kullanıcı #${review.kullaniciID || 0}`}
                   </Text>
                   <Text style={styles.reviewDate}>
-                    {new Date(review.yorumTarih).toLocaleDateString('tr-TR')}
+                    {review.yorumTarih ? new Date(review.yorumTarih).toLocaleDateString('tr-TR') : 'Tarih yok'}
                   </Text>
                 </View>
                 {review.puan && (
                   <Text style={styles.reviewRating}>{renderStars(review.puan)}</Text>
                 )}
                 {review.yorum && (
-                  <Text style={styles.reviewText}>{review.yorum}</Text>
+                  <Text style={styles.reviewText}>{review.yorum || '-'}</Text>
                 )}
               </View>
             ))}

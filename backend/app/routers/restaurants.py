@@ -57,11 +57,40 @@ def login_restaurant(credentials: schemas.RestorantLogin, db: Session = Depends(
         "longitude": restaurant.longitude
     }
 
-@router.get("/", response_model=List[schemas.RestorantResponse])
+@router.get("/")
 def get_all_restaurants(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    """Tüm restoranları listele"""
+    """Tüm restoranları listele - ortalama puan ve yorum sayısı ile birlikte"""
+    from sqlalchemy import func
+    
     restaurants = db.query(models.RestorantHesap).offset(skip).limit(limit).all()
-    return restaurants
+    
+    result = []
+    for restaurant in restaurants:
+        # Restorana ait yorumların ortalama puanını hesapla
+        avg_rating = db.query(func.avg(models.Yorum.puan)).filter(
+            models.Yorum.restorantID == restaurant.restorantID,
+            models.Yorum.puan.isnot(None)
+        ).scalar()
+        
+        # Restorana ait yorum sayısını hesapla
+        yorum_sayisi = db.query(func.count(models.Yorum.yorumID)).filter(
+            models.Yorum.restorantID == restaurant.restorantID
+        ).scalar()
+        
+        restaurant_dict = {
+            "restorantID": restaurant.restorantID,
+            "ad": restaurant.ad,
+            "mail": restaurant.mail,
+            "telefon": restaurant.telefon,
+            "latitude": restaurant.latitude,
+            "longitude": restaurant.longitude,
+            "kayitTarih": restaurant.kayitTarih,
+            "ortalamaPuan": float(avg_rating) if avg_rating else 0.0,
+            "yorumSayisi": int(yorum_sayisi) if yorum_sayisi else 0
+        }
+        result.append(restaurant_dict)
+    
+    return result
 
 @router.get("/{restoran_id}", response_model=schemas.RestorantResponse)
 def get_restaurant(restoran_id: int, db: Session = Depends(get_db)):

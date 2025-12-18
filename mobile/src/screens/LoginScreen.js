@@ -10,10 +10,11 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import Button from '../components/Button';
 import Input from '../components/Input';
-import { colors } from '../theme/colors';
+import { colors, gradients } from '../theme/colors';
 import { spacing, borderRadius, shadows } from '../theme/spacing';
 
 export default function LoginScreen({ navigation }) {
@@ -39,7 +40,7 @@ export default function LoginScreen({ navigation }) {
 
   return (
     <LinearGradient
-      colors={['#FFE5E5', '#F8F9FA']}
+      colors={gradients.light}
       style={styles.container}
     >
       <KeyboardAvoidingView
@@ -55,17 +56,17 @@ export default function LoginScreen({ navigation }) {
               style={styles.backButton}
               onPress={() => navigation.navigate('Welcome')}
             >
-              <Text style={styles.backButtonText}>←</Text>
+              <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
             </TouchableOpacity>
           </View>
 
           <View style={styles.content}>
             <View style={styles.iconContainer}>
               <LinearGradient
-                colors={[colors.primary, colors.primaryLight]}
+                colors={gradients.primary}
                 style={styles.iconGradient}
               >
-                <Text style={styles.icon}>👤</Text>
+                <Ionicons name="person" size={48} color={colors.white} />
               </LinearGradient>
             </View>
 
@@ -75,7 +76,7 @@ export default function LoginScreen({ navigation }) {
             <View style={styles.formContainer}>
               <Input
                 label="E-posta"
-                icon="📧"
+                iconName="mail"
                 placeholder="ornek@email.com"
                 value={mail}
                 onChangeText={setMail}
@@ -86,7 +87,7 @@ export default function LoginScreen({ navigation }) {
 
               <Input
                 label="Şifre"
-                icon="🔒"
+                iconName="lock-closed"
                 placeholder="••••••••"
                 value={password}
                 onChangeText={setPassword}
@@ -172,13 +173,14 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: '900',
-    color: colors.dark,
+    color: colors.textPrimary,
     textAlign: 'center',
     marginBottom: spacing.xs,
+    letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: 16,
-    color: colors.gray,
+    color: colors.textSecondary,
     textAlign: 'center',
     marginBottom: spacing.xl,
   },
@@ -200,7 +202,7 @@ const styles = StyleSheet.create({
   },
   dividerText: {
     marginHorizontal: spacing.md,
-    color: colors.lightGray,
+    color: colors.textMuted,
     fontSize: 14,
     fontWeight: '500',
   },
@@ -210,7 +212,7 @@ const styles = StyleSheet.create({
   },
   registerText: {
     fontSize: 15,
-    color: colors.gray,
+    color: colors.textSecondary,
   },
   registerTextBold: {
     color: colors.primary,

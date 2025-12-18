@@ -1,5 +1,5 @@
-from pydantic import BaseModel, EmailStr
-from typing import Optional
+from pydantic import BaseModel, EmailStr, Field
+from typing import Optional, Literal
 from datetime import datetime
 
 class KullaniciBase(BaseModel):
@@ -48,7 +48,7 @@ class MenuItemBase(BaseModel):
     yemekadi: str
     aciklama: Optional[str] = None
     fiyat: int
-    kategoriad: Optional[str] = None
+    kategoriad: Literal['Tatlı', 'Döner', 'Burger', 'Etli Ekmek', 'Restorana Özel'] = 'Restorana Özel'
 
 class MenuItemCreate(MenuItemBase):
     restorantID: int
@@ -62,7 +62,7 @@ class MenuItemResponse(MenuItemBase):
 
 class YorumBase(BaseModel):
     yorum: Optional[str] = None
-    puan: Optional[int] = None
+    puan: Optional[int] = Field(None, ge=0, le=5, description="Puan 0-5 arası olmalıdır")
     fotoURL: Optional[str] = None
 
 class YorumCreate(YorumBase):
@@ -76,7 +76,7 @@ class YorumResponse(BaseModel):
     restorantID: int
     menuID: Optional[int] = None
     yorum: Optional[str] = None
-    puan: Optional[int] = None
+    puan: Optional[int] = Field(None, ge=0, le=5)
     fotoURL: Optional[str] = None
     yorumTarih: datetime
     kullaniciAd: Optional[str] = None

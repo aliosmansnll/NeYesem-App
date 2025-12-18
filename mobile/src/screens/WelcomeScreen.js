@@ -1,9 +1,10 @@
 import React from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import Button from '../components/Button';
 import { colors, gradients } from '../theme/colors';
-import { spacing, borderRadius } from '../theme/spacing';
+import { spacing, borderRadius, shadows } from '../theme/spacing';
 
 export default function WelcomeScreen({ navigation }) {
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
@@ -27,7 +28,7 @@ export default function WelcomeScreen({ navigation }) {
 
   return (
     <LinearGradient
-      colors={['#FFE5E5', '#F8F9FA']}
+      colors={gradients.light}
       style={styles.container}
     >
       <View style={styles.content}>
@@ -40,11 +41,21 @@ export default function WelcomeScreen({ navigation }) {
             },
           ]}
         >
-          <Text style={styles.emoji}>🍽️</Text>
+          <View style={styles.logoContainer}>
+            <LinearGradient
+              colors={gradients.primary}
+              style={styles.logoGradient}
+            >
+              <Ionicons name="restaurant" size={64} color={colors.white} />
+            </LinearGradient>
+          </View>
+          
           <Text style={styles.title}>NeYesem</Text>
           <Text style={styles.subtitle}>Lezzetin Dijital Adresi</Text>
+          
           <View style={styles.taglineContainer}>
-            <Text style={styles.tagline}>✨ Keşfet • Değerlendir • Paylaş</Text>
+            <Ionicons name="sparkles" size={16} color={colors.primary} />
+            <Text style={styles.tagline}>Keşfet • Değerlendir • Paylaş</Text>
           </View>
         </Animated.View>
 
@@ -59,7 +70,6 @@ export default function WelcomeScreen({ navigation }) {
         >
           <Button
             title="Kullanıcı Girişi"
-            icon="👤"
             variant="primary"
             size="large"
             fullWidth
@@ -68,7 +78,6 @@ export default function WelcomeScreen({ navigation }) {
 
           <Button
             title="Restoran Girişi"
-            icon="🏪"
             variant="secondary"
             size="large"
             fullWidth
@@ -77,16 +86,22 @@ export default function WelcomeScreen({ navigation }) {
 
           <View style={styles.featuresContainer}>
             <View style={styles.feature}>
-              <Text style={styles.featureIcon}>🔍</Text>
+              <View style={styles.featureIconContainer}>
+                <Ionicons name="search" size={24} color={colors.primary} />
+              </View>
               <Text style={styles.featureText}>Restoran Bul</Text>
             </View>
             <View style={styles.feature}>
-              <Text style={styles.featureIcon}>⭐</Text>
+              <View style={styles.featureIconContainer}>
+                <Ionicons name="star" size={24} color={colors.accent} />
+              </View>
               <Text style={styles.featureText}>Değerlendir</Text>
             </View>
             <View style={styles.feature}>
-              <Text style={styles.featureIcon}>📍</Text>
-              <Text style={styles.featureText}>Yol Tarifi Al</Text>
+              <View style={styles.featureIconContainer}>
+                <Ionicons name="location" size={24} color={colors.secondary} />
+              </View>
+              <Text style={styles.featureText}>Yol Tarifi</Text>
             </View>
           </View>
         </Animated.View>
@@ -109,9 +124,16 @@ const styles = StyleSheet.create({
   headerContainer: {
     alignItems: 'center',
   },
-  emoji: {
-    fontSize: 80,
-    marginBottom: spacing.lg,
+  logoContainer: {
+    marginBottom: spacing.xl,
+  },
+  logoGradient: {
+    width: 120,
+    height: 120,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.large,
   },
   title: {
     fontSize: 56,
@@ -119,25 +141,29 @@ const styles = StyleSheet.create({
     color: colors.primary,
     textAlign: 'center',
     marginBottom: spacing.sm,
-    letterSpacing: 1,
+    letterSpacing: -1,
   },
   subtitle: {
     fontSize: 18,
-    color: colors.gray,
+    color: colors.textSecondary,
     textAlign: 'center',
     fontWeight: '500',
     marginBottom: spacing.md,
   },
   taglineContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
     backgroundColor: colors.white,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     borderRadius: borderRadius.round,
     marginTop: spacing.md,
+    ...shadows.small,
   },
   tagline: {
     fontSize: 14,
-    color: colors.dark,
+    color: colors.textPrimary,
     fontWeight: '600',
   },
   buttonsContainer: {
@@ -146,21 +172,25 @@ const styles = StyleSheet.create({
   featuresContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginTop: spacing.lg,
+    marginTop: spacing.xl,
     paddingTop: spacing.lg,
-    borderTopWidth: 1,
-    borderTopColor: colors.veryLightGray,
   },
   feature: {
     alignItems: 'center',
+    gap: spacing.sm,
   },
-  featureIcon: {
-    fontSize: 24,
-    marginBottom: spacing.xs,
+  featureIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: borderRadius.lg,
+    backgroundColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.medium,
   },
   featureText: {
     fontSize: 12,
-    color: colors.gray,
-    fontWeight: '500',
+    color: colors.textSecondary,
+    fontWeight: '600',
   },
 });

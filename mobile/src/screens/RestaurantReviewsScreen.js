@@ -33,7 +33,7 @@ export default function RestaurantReviewsScreen() {
       // İstatistikleri hesapla
       const total = data.length;
       const sum = data.reduce((acc, r) => acc + (r.puan || 0), 0);
-      const average = total > 0 ? (sum / total).toFixed(1) : 0;
+      const average = total > 0 ? (sum / total).toFixed(1) : '0';
 
       const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
       data.forEach((r) => {
@@ -66,14 +66,14 @@ export default function RestaurantReviewsScreen() {
           <Text style={styles.reviewUser}>
             {item.kullaniciAd && item.kullaniciSoyad
               ? `${item.kullaniciAd} ${item.kullaniciSoyad}`
-              : `Kullanıcı #${item.kullaniciID}`}
+              : `Kullanıcı #${item.kullaniciID || 0}`}
           </Text>
           {item.menuID && (
             <Text style={styles.menuBadge}>Menü Yorumu</Text>
           )}
         </View>
         <Text style={styles.reviewDate}>
-          {new Date(item.yorumTarih).toLocaleDateString('tr-TR')}
+          {item.yorumTarih ? new Date(item.yorumTarih).toLocaleDateString('tr-TR') : 'Tarih yok'}
         </Text>
       </View>
 
@@ -82,7 +82,7 @@ export default function RestaurantReviewsScreen() {
       )}
 
       {item.yorum && (
-        <Text style={styles.reviewText}>{item.yorum}</Text>
+        <Text style={styles.reviewText}>{item.yorum || '-'}</Text>
       )}
     </View>
   );
@@ -100,15 +100,15 @@ export default function RestaurantReviewsScreen() {
       {/* Stats Header */}
       <View style={styles.statsHeader}>
         <View style={styles.averageSection}>
-          <Text style={styles.averageValue}>{stats.average}</Text>
+          <Text style={styles.averageValue}>{String(stats.average)}</Text>
           <Text style={styles.averageLabel}>/ 5.0</Text>
-          <Text style={styles.totalReviews}>{stats.total} değerlendirme</Text>
+          <Text style={styles.totalReviews}>{String(stats.total)} değerlendirme</Text>
         </View>
 
         <View style={styles.distributionSection}>
           {[5, 4, 3, 2, 1].map((star) => (
             <View key={star} style={styles.distributionRow}>
-              <Text style={styles.starLabel}>{star} ⭐</Text>
+              <Text style={styles.starLabel}>{String(star)} ⭐</Text>
               <View style={styles.barContainer}>
                 <View
                   style={[
@@ -119,7 +119,7 @@ export default function RestaurantReviewsScreen() {
                   ]}
                 />
               </View>
-              <Text style={styles.countLabel}>{stats.distribution[star]}</Text>
+              <Text style={styles.countLabel}>{String(stats.distribution[star])}</Text>
             </View>
           ))}
         </View>
@@ -129,7 +129,7 @@ export default function RestaurantReviewsScreen() {
       <FlatList
         data={reviews}
         renderItem={renderReview}
-        keyExtractor={(item) => item.yorumID.toString()}
+        keyExtractor={(item) => String(item.yorumID || Math.random())}
         contentContainerStyle={styles.list}
         refreshControl={
           <RefreshControl

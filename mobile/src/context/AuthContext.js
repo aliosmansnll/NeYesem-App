@@ -41,10 +41,11 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await loginUser(mail, password);
       const userData = {
-        kullaniciID: response.kullaniciID,
-        ad: response.ad,
-        soyad: response.soyad,
-        mail: response.mail,
+        kullaniciID: response.kullaniciID || null,
+        ad: response.ad || '',
+        soyad: response.soyad || '',
+        mail: response.mail || '',
+        puan: response.puan || 0,
       };
       
       await AsyncStorage.multiSet([
@@ -63,10 +64,12 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await loginRestaurant(mail, password);
       const restaurantData = {
-        restorantID: response.restorantID,
-        ad: response.ad,
-        mail: response.mail,
-        telefon: response.telefon,
+        restorantID: response.restorantID || null,
+        ad: response.ad || '',
+        mail: response.mail || '',
+        telefon: response.telefon || '',
+        latitude: response.latitude || null,
+        longitude: response.longitude || null,
       };
       
       await AsyncStorage.multiSet([
@@ -85,10 +88,11 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await registerUser(userData);
       const user = {
-        kullaniciID: response.kullaniciID,
-        ad: response.ad,
-        soyad: response.soyad,
-        mail: response.mail,
+        kullaniciID: response.kullaniciID || null,
+        ad: response.ad || '',
+        soyad: response.soyad || '',
+        mail: response.mail || '',
+        puan: response.puan || 0,
       };
       
       await AsyncStorage.multiSet([
@@ -107,10 +111,12 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await registerRestaurant(restaurantData);
       const restaurant = {
-        restorantID: response.restorantID,
-        ad: response.ad,
-        mail: response.mail,
-        telefon: response.telefon,
+        restorantID: response.restorantID || null,
+        ad: response.ad || '',
+        mail: response.mail || '',
+        telefon: response.telefon || '',
+        latitude: response.latitude || null,
+        longitude: response.longitude || null,
       };
       
       await AsyncStorage.multiSet([

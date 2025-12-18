@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, TextInput, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { spacing, borderRadius, shadows } from '../theme/spacing';
 
@@ -12,7 +13,7 @@ export default function Input({
   keyboardType = 'default',
   autoCapitalize = 'sentences',
   autoCorrect = true,
-  icon = null,
+  iconName = null,  // Ionicons icon adı
   error = null,
 }) {
   const [isFocused, setIsFocused] = useState(false);
@@ -27,7 +28,14 @@ export default function Input({
         isFocused && styles.focused,
         error && styles.error,
       ]}>
-        {icon && <Text style={styles.icon}>{icon}</Text>}
+        {iconName && (
+          <Ionicons 
+            name={iconName} 
+            size={20} 
+            color={isFocused ? colors.primary : colors.lightGray} 
+            style={styles.icon}
+          />
+        )}
         
         <TextInput
           style={styles.input}
@@ -44,8 +52,15 @@ export default function Input({
         />
         
         {secureTextEntry && (
-          <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-            <Text style={styles.eyeIcon}>{showPassword ? '👁️' : '👁️‍🗨️'}</Text>
+          <TouchableOpacity 
+            onPress={() => setShowPassword(!showPassword)}
+            style={styles.eyeButton}
+          >
+            <Ionicons 
+              name={showPassword ? 'eye-off' : 'eye'} 
+              size={20} 
+              color={colors.gray} 
+            />
           </TouchableOpacity>
         )}
       </View>
@@ -58,18 +73,19 @@ export default function Input({
 const styles = StyleSheet.create({
   container: {
     marginBottom: spacing.md,
+    flex: 1,
   },
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.dark,
+    color: colors.textPrimary,
     marginBottom: spacing.xs,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.white,
-    borderRadius: borderRadius.md,
+    borderRadius: borderRadius.lg,
     paddingHorizontal: spacing.md,
     borderWidth: 2,
     borderColor: colors.veryLightGray,
@@ -77,23 +93,22 @@ const styles = StyleSheet.create({
   },
   focused: {
     borderColor: colors.primary,
+    ...shadows.medium,
   },
   error: {
     borderColor: colors.error,
   },
   icon: {
-    fontSize: 20,
     marginRight: spacing.sm,
   },
   input: {
     flex: 1,
     paddingVertical: spacing.md,
     fontSize: 16,
-    color: colors.dark,
+    color: colors.textPrimary,
   },
-  eyeIcon: {
-    fontSize: 20,
-    paddingLeft: spacing.sm,
+  eyeButton: {
+    padding: spacing.xs,
   },
   errorText: {
     fontSize: 12,

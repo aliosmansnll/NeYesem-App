@@ -82,9 +82,9 @@ export default function AddReviewScreen({ route, navigation }) {
           <Text style={styles.title}>
             {menuItem ? 'Menü Yorumu' : 'Restoran Yorumu'}
           </Text>
-          <Text style={styles.subtitle}>{restaurant.ad}</Text>
+          <Text style={styles.subtitle}>{restaurant?.ad || 'Restoran'}</Text>
           {menuItem && (
-            <Text style={styles.menuName}>{menuItem.yemekadi}</Text>
+            <Text style={styles.menuName}>{menuItem?.yemekadi || 'Yemek'}</Text>
           )}
         </View>
 
@@ -92,7 +92,7 @@ export default function AddReviewScreen({ route, navigation }) {
           <Text style={styles.label}>Puanınız *</Text>
           {renderStars()}
           <Text style={styles.selectedRating}>
-            {puan > 0 ? `${puan}/5 seçildi` : 'Puan seçin'}
+            {puan > 0 ? `${String(puan)}/5 seçildi` : 'Puan seçin'}
           </Text>
 
           <Text style={styles.label}>Yorumunuz (opsiyonel)</Text>

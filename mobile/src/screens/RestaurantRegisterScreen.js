@@ -2,16 +2,20 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
-  TouchableOpacity,
   StyleSheet,
   Alert,
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  TouchableOpacity,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
+import Button from '../components/Button';
+import Input from '../components/Input';
+import { colors, gradients } from '../theme/colors';
+import { spacing, borderRadius, shadows } from '../theme/spacing';
 
 export default function RestaurantRegisterScreen({ navigation }) {
   const [formData, setFormData] = useState({
@@ -65,213 +69,245 @@ export default function RestaurantRegisterScreen({ navigation }) {
   };
 
   return (
-    <KeyboardAvoidingView
+    <LinearGradient
+      colors={gradients.light}
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.content}>
-          <Text style={styles.icon}>🏪</Text>
-          <Text style={styles.title}>Restoran Kaydı</Text>
-          <Text style={styles.subtitle}>Restoranınızı kaydedin 🎉</Text>
-
-          <View style={styles.form}>
-            <TextInput
-              style={styles.input}
-              placeholder="Restoran Adı *"
-              value={formData.ad}
-              onChangeText={(value) => updateField('ad', value)}
-              autoCapitalize="words"
-            />
-
-            <TextInput
-              style={styles.input}
-              placeholder="E-posta *"
-              value={formData.mail}
-              onChangeText={(value) => updateField('mail', value)}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-
-            <TextInput
-              style={styles.input}
-              placeholder="Telefon (opsiyonel)"
-              value={formData.telefon}
-              onChangeText={(value) => updateField('telefon', value)}
-              keyboardType="phone-pad"
-            />
-
-            <View style={styles.locationContainer}>
-              <Text style={styles.locationLabel}>Konum (opsiyonel)</Text>
-              <View style={styles.locationInputs}>
-                <TextInput
-                  style={[styles.input, styles.locationInput]}
-                  placeholder="Enlem"
-                  value={formData.latitude}
-                  onChangeText={(value) => updateField('latitude', value)}
-                  keyboardType="decimal-pad"
-                />
-                <TextInput
-                  style={[styles.input, styles.locationInput]}
-                  placeholder="Boylam"
-                  value={formData.longitude}
-                  onChangeText={(value) => updateField('longitude', value)}
-                  keyboardType="decimal-pad"
-                />
-              </View>
-            </View>
-
-            <TextInput
-              style={styles.input}
-              placeholder="Şifre *"
-              value={formData.password}
-              onChangeText={(value) => updateField('password', value)}
-              secureTextEntry
-              autoCapitalize="none"
-            />
-
-            <TextInput
-              style={styles.input}
-              placeholder="Şifre Tekrar *"
-              value={formData.confirmPassword}
-              onChangeText={(value) => updateField('confirmPassword', value)}
-              secureTextEntry
-              autoCapitalize="none"
-            />
-
-            <TouchableOpacity
-              style={styles.button}
-              onPress={handleRegister}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.buttonText}>Kayıt Ol</Text>
-              )}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.loginLink}
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.header}>
+            <TouchableOpacity 
+              style={styles.backButton}
               onPress={() => navigation.goBack()}
             >
-              <Text style={styles.loginText}>
-                Hesabınız var mı? <Text style={styles.loginTextBold}>Giriş Yap</Text>
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.backLink}
-              onPress={() => navigation.navigate('Welcome')}
-            >
-              <Text style={styles.backText}>← Ana Sayfaya Dön</Text>
+              <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
             </TouchableOpacity>
           </View>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+
+          <View style={styles.content}>
+            <View style={styles.iconContainer}>
+              <LinearGradient
+                colors={gradients.secondary}
+                style={styles.iconGradient}
+              >
+                <Ionicons name="storefront" size={48} color={colors.white} />
+              </LinearGradient>
+            </View>
+
+            <Text style={styles.title}>Restoran Kaydı</Text>
+            <Text style={styles.subtitle}>Restoranınızı kaydedin ve büyüyün</Text>
+
+            <View style={styles.formContainer}>
+              <Input
+                label="Restoran Adı *"
+                iconName="restaurant"
+                placeholder="Restoranınızın adı"
+                value={formData.ad}
+                onChangeText={(value) => updateField('ad', value)}
+                autoCapitalize="words"
+              />
+
+              <Input
+                label="E-posta *"
+                iconName="mail"
+                placeholder="ornek@restoran.com"
+                value={formData.mail}
+                onChangeText={(value) => updateField('mail', value)}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+
+              <Input
+                label="Telefon"
+                iconName="call"
+                placeholder="5XX XXX XX XX (opsiyonel)"
+                value={formData.telefon}
+                onChangeText={(value) => updateField('telefon', value)}
+                keyboardType="phone-pad"
+              />
+
+              <View style={styles.locationSection}>
+                <View style={styles.locationHeader}>
+                  <Ionicons name="location" size={20} color={colors.secondary} />
+                  <Text style={styles.locationLabel}>Konum (opsiyonel)</Text>
+                </View>
+                <View style={styles.locationInputs}>
+                  <Input
+                    iconName="navigate"
+                    placeholder="Enlem"
+                    value={formData.latitude}
+                    onChangeText={(value) => updateField('latitude', value)}
+                    keyboardType="decimal-pad"
+                  />
+                  <Input
+                    iconName="compass"
+                    placeholder="Boylam"
+                    value={formData.longitude}
+                    onChangeText={(value) => updateField('longitude', value)}
+                    keyboardType="decimal-pad"
+                  />
+                </View>
+              </View>
+
+              <Input
+                label="Şifre *"
+                iconName="lock-closed"
+                placeholder="En az 6 karakter"
+                value={formData.password}
+                onChangeText={(value) => updateField('password', value)}
+                secureTextEntry
+                autoCapitalize="none"
+              />
+
+              <Input
+                label="Şifre Tekrar *"
+                iconName="lock-closed"
+                placeholder="Şifrenizi tekrar girin"
+                value={formData.confirmPassword}
+                onChangeText={(value) => updateField('confirmPassword', value)}
+                secureTextEntry
+                autoCapitalize="none"
+              />
+
+              <Button
+                title="Kayıt Ol"
+                variant="secondary"
+                size="large"
+                fullWidth
+                loading={loading}
+                onPress={handleRegister}
+              />
+
+              <View style={styles.divider}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>veya</Text>
+                <View style={styles.dividerLine} />
+              </View>
+
+              <TouchableOpacity
+                style={styles.loginLink}
+                onPress={() => navigation.goBack()}
+              >
+                <Text style={styles.loginText}>
+                  Hesabınız var mı? <Text style={styles.loginTextBold}>Giriş Yap</Text>
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
   scrollContent: {
     flexGrow: 1,
   },
+  header: {
+    paddingTop: spacing.xxxl,
+    paddingHorizontal: spacing.lg,
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: borderRadius.round,
+    backgroundColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.small,
+  },
   content: {
     flex: 1,
-    justifyContent: 'center',
-    padding: 20,
-    paddingTop: 40,
-    paddingBottom: 40,
+    padding: spacing.xl,
+    paddingTop: spacing.lg,
   },
-  icon: {
-    fontSize: 80,
-    textAlign: 'center',
-    marginBottom: 20,
+  iconContainer: {
+    alignSelf: 'center',
+    marginBottom: spacing.lg,
+  },
+  iconGradient: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.large,
   },
   title: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    color: '#4ECDC4',
+    fontSize: 32,
+    fontWeight: '900',
+    color: colors.textPrimary,
     textAlign: 'center',
-    marginBottom: 10,
+    marginBottom: spacing.xs,
+    letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
+    color: colors.textSecondary,
     textAlign: 'center',
-    marginBottom: 30,
+    marginBottom: spacing.xl,
   },
-  form: {
-    backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
+  formContainer: {
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.xl,
+    padding: spacing.xl,
+    ...shadows.large,
   },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 15,
-    marginBottom: 15,
-    fontSize: 16,
-    backgroundColor: '#f9f9f9',
+  locationSection: {
+    marginBottom: spacing.md,
   },
-  locationContainer: {
-    marginBottom: 15,
+  locationHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.sm,
   },
   locationLabel: {
     fontSize: 14,
-    color: '#666',
-    marginBottom: 8,
+    fontWeight: '600',
+    color: colors.textPrimary,
   },
   locationInputs: {
     flexDirection: 'row',
-    gap: 10,
+    gap: spacing.md,
   },
-  locationInput: {
-    flex: 1,
-    marginBottom: 0,
-  },
-  button: {
-    backgroundColor: '#4ECDC4',
-    padding: 15,
-    borderRadius: 8,
+  divider: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 10,
+    marginVertical: spacing.lg,
   },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.veryLightGray,
+  },
+  dividerText: {
+    marginHorizontal: spacing.md,
+    color: colors.textMuted,
+    fontSize: 14,
+    fontWeight: '500',
   },
   loginLink: {
-    marginTop: 20,
     alignItems: 'center',
+    paddingVertical: spacing.md,
   },
   loginText: {
-    color: '#666',
-    fontSize: 14,
+    fontSize: 15,
+    color: colors.textSecondary,
   },
   loginTextBold: {
-    color: '#4ECDC4',
-    fontWeight: 'bold',
-  },
-  backLink: {
-    marginTop: 15,
-    alignItems: 'center',
-  },
-  backText: {
-    color: '#999',
-    fontSize: 14,
+    color: colors.secondary,
+    fontWeight: '700',
   },
 });

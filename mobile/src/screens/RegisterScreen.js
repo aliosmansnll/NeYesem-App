@@ -10,10 +10,11 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import Button from '../components/Button';
 import Input from '../components/Input';
-import { colors } from '../theme/colors';
+import { colors, gradients } from '../theme/colors';
 import { spacing, borderRadius, shadows } from '../theme/spacing';
 
 export default function RegisterScreen({ navigation }) {
@@ -67,7 +68,7 @@ export default function RegisterScreen({ navigation }) {
 
   return (
     <LinearGradient
-      colors={['#FFE5E5', '#F8F9FA']}
+      colors={gradients.light}
       style={styles.container}
     >
       <KeyboardAvoidingView
@@ -83,17 +84,17 @@ export default function RegisterScreen({ navigation }) {
               style={styles.backButton}
               onPress={() => navigation.goBack()}
             >
-              <Text style={styles.backButtonText}>←</Text>
+              <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
             </TouchableOpacity>
           </View>
 
           <View style={styles.content}>
             <View style={styles.iconContainer}>
               <LinearGradient
-                colors={[colors.secondary, colors.secondaryLight]}
+                colors={gradients.accent}
                 style={styles.iconGradient}
               >
-                <Text style={styles.icon}>✨</Text>
+                <Ionicons name="person-add" size={48} color={colors.white} />
               </LinearGradient>
             </View>
 
@@ -104,7 +105,7 @@ export default function RegisterScreen({ navigation }) {
               <View style={styles.formRow}>
                 <Input
                   label="Ad *"
-                  icon="👤"
+                  iconName="person"
                   placeholder="Adın"
                   value={formData.ad}
                   onChangeText={(value) => updateField('ad', value)}
@@ -113,7 +114,7 @@ export default function RegisterScreen({ navigation }) {
 
                 <Input
                   label="Soyad *"
-                  icon="👤"
+                  iconName="person-outline"
                   placeholder="Soyadın"
                   value={formData.soyad}
                   onChangeText={(value) => updateField('soyad', value)}
@@ -123,7 +124,7 @@ export default function RegisterScreen({ navigation }) {
 
               <Input
                 label="E-posta *"
-                icon="📧"
+                iconName="mail"
                 placeholder="ornek@email.com"
                 value={formData.mail}
                 onChangeText={(value) => updateField('mail', value)}
@@ -134,7 +135,7 @@ export default function RegisterScreen({ navigation }) {
 
               <Input
                 label="Telefon"
-                icon="📱"
+                iconName="call"
                 placeholder="5XX XXX XX XX (opsiyonel)"
                 value={formData.telefon}
                 onChangeText={(value) => updateField('telefon', value)}
@@ -143,7 +144,7 @@ export default function RegisterScreen({ navigation }) {
 
               <Input
                 label="Şifre *"
-                icon="🔒"
+                iconName="lock-closed"
                 placeholder="En az 6 karakter"
                 value={formData.password}
                 onChangeText={(value) => updateField('password', value)}
@@ -153,7 +154,7 @@ export default function RegisterScreen({ navigation }) {
 
               <Input
                 label="Şifre Tekrar *"
-                icon="🔒"
+                iconName="lock-closed"
                 placeholder="Şifreni tekrar gir"
                 value={formData.confirmPassword}
                 onChangeText={(value) => updateField('confirmPassword', value)}
@@ -163,7 +164,7 @@ export default function RegisterScreen({ navigation }) {
 
               <Button
                 title="Hesap Oluştur"
-                variant="secondary"
+                variant="primary"
                 size="large"
                 fullWidth
                 loading={loading}
@@ -239,13 +240,14 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: '900',
-    color: colors.dark,
+    color: colors.textPrimary,
     textAlign: 'center',
     marginBottom: spacing.xs,
+    letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: 16,
-    color: colors.gray,
+    color: colors.textSecondary,
     textAlign: 'center',
     marginBottom: spacing.xl,
   },
@@ -271,7 +273,7 @@ const styles = StyleSheet.create({
   },
   dividerText: {
     marginHorizontal: spacing.md,
-    color: colors.lightGray,
+    color: colors.textMuted,
     fontSize: 14,
     fontWeight: '500',
   },
@@ -281,10 +283,10 @@ const styles = StyleSheet.create({
   },
   loginText: {
     fontSize: 15,
-    color: colors.gray,
+    color: colors.textSecondary,
   },
   loginTextBold: {
-    color: colors.secondary,
+    color: colors.primary,
     fontWeight: '700',
   },
 });

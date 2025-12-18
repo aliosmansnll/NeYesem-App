@@ -12,9 +12,14 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
+  Pressable,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { getRestaurantMenu, createMenuItem, deleteMenuItem } from '../services/api';
+
+const KATEGORILER = ['Tatlı', 'Döner', 'Burger', 'Etli Ekmek', 'Restorana Özel'];
 
 export default function RestaurantMenuManagementScreen() {
   const { restaurant } = useAuth();
@@ -22,11 +27,12 @@ export default function RestaurantMenuManagementScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
+  const [categoryModalVisible, setCategoryModalVisible] = useState(false);
   const [formData, setFormData] = useState({
     yemekadi: '',
     aciklama: '',
     fiyat: '',
-    kategoriad: '',
+    kategoriad: 'Restorana Özel',
   });
   const [submitting, setSubmitting] = useState(false);
 
@@ -70,17 +76,18 @@ export default function RestaurantMenuManagementScreen() {
       await createMenuItem({
         restorantID: restaurant.restorantID,
         yemekadi: formData.yemekadi,
-        aciklama: formData.aciklama || null,
+        aciklama: formData.aciklama || '',
         fiyat: price,
-        kategoriad: formData.kategoriad || null,
+        kategoriad: formData.kategoriad,
       });
 
       Alert.alert('Başarılı', 'Menü öğesi eklendi!');
       setModalVisible(false);
-      setFormData({ yemekadi: '', aciklama: '', fiyat: '', kategoriad: '' });
+      setFormData({ yemekadi: '', aciklama: '', fiyat: '', kategoriad: 'Restorana Özel' });
       fetchMenu();
     } catch (error) {
-      Alert.alert('Hata', error || 'Menü öğesi eklenemedi');
+      console.error('Menü ekleme hatası:', error);
+      Alert.alert('Hata', typeof error === 'string' ? error : 'Menü öğesi eklenemedi');
     } finally {
       setSubmitting(false);
     }
@@ -112,14 +119,14 @@ export default function RestaurantMenuManagementScreen() {
   const renderMenuItem = ({ item }) => (
     <View style={styles.menuCard}>
       <View style={styles.menuInfo}>
-        <Text style={styles.menuName}>{item.yemekadi}</Text>
+        <Text style={styles.menuName}>{item.yemekadi || 'Yemek'}</Text>
         {item.aciklama && (
-          <Text style={styles.menuDescription}>{item.aciklama}</Text>
+          <Text style={styles.menuDescription}>{item.aciklama || '-'}</Text>
         )}
         {item.kategoriad && (
-          <Text style={styles.menuCategory}>🏷️ {item.kategoriad}</Text>
+          <Text style={styles.menuCategory}>🏷️ {item.kategoriad || '-'}</Text>
         )}
-        <Text style={styles.menuPrice}>{item.fiyat} ₺</Text>
+        <Text style={styles.menuPrice}>{String(item.fiyat || 0)} ₺</Text>
       </View>
       <TouchableOpacity
         style={styles.deleteButton}
@@ -143,7 +150,7 @@ export default function RestaurantMenuManagementScreen() {
       <FlatList
         data={menu}
         renderItem={renderMenuItem}
-        keyExtractor={(item) => item.menuID.toString()}
+        keyExtractor={(item) => String(item.menuID || Math.random())}
         contentContainerStyle={styles.list}
         refreshControl={
           <RefreshControl
@@ -179,65 +186,122 @@ export default function RestaurantMenuManagementScreen() {
           style={styles.modalContainer}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Yeni Menü Ekle</Text>
+          <ScrollView contentContainerStyle={styles.modalScrollContent}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Yeni Menü Ekle</Text>
 
-            <TextInput
-              style={styles.input}
-              placeholder="Yemek Adı *"
-              value={formData.yemekadi}
-              onChangeText={(text) => setFormData({ ...formData, yemekadi: text })}
-            />
+              <TextInput
+                style={styles.input}
+                placeholder="Yemek Adı *"
+                placeholderTextColor="#999"
+                value={formData.yemekadi}
+                onChangeText={(text) => setFormData({ ...formData, yemekadi: text })}
+              />
 
-            <TextInput
-              style={styles.input}
-              placeholder="Açıklama"
-              value={formData.aciklama}
-              onChangeText={(text) => setFormData({ ...formData, aciklama: text })}
-              multiline
-              numberOfLines={3}
-            />
+              <TextInput
+                style={styles.input}
+                placeholder="Açıklama"
+                placeholderTextColor="#999"
+                value={formData.aciklama}
+                onChangeText={(text) => setFormData({ ...formData, aciklama: text })}
+                multiline
+                numberOfLines={3}
+              />
 
-            <TextInput
-              style={styles.input}
-              placeholder="Fiyat (₺) *"
-              value={formData.fiyat}
-              onChangeText={(text) => setFormData({ ...formData, fiyat: text })}
-              keyboardType="numeric"
-            />
+              <TextInput
+                style={styles.input}
+                placeholder="Fiyat (₺) *"
+                placeholderTextColor="#999"
+                value={formData.fiyat}
+                onChangeText={(text) => setFormData({ ...formData, fiyat: text })}
+                keyboardType="numeric"
+              />
 
-            <TextInput
-              style={styles.input}
-              placeholder="Kategori (Ana Yemek, İçecek vb.)"
-              value={formData.kategoriad}
-              onChangeText={(text) => setFormData({ ...formData, kategoriad: text })}
-            />
-
-            <View style={styles.modalButtons}>
               <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => {
-                  setModalVisible(false);
-                  setFormData({ yemekadi: '', aciklama: '', fiyat: '', kategoriad: '' });
-                }}
+                style={styles.categorySelector}
+                onPress={() => setCategoryModalVisible(true)}
               >
-                <Text style={styles.cancelButtonText}>İptal</Text>
+                <View style={styles.categorySelectorContent}>
+                  <View>
+                    <Text style={styles.categorySelectorLabel}>Kategori</Text>
+                    <Text style={styles.categorySelectorValue}>{formData.kategoriad}</Text>
+                  </View>
+                  <Ionicons name="chevron-down" size={24} color="#666" />
+                </View>
               </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[styles.modalButton, styles.saveButton]}
-                onPress={handleAddMenuItem}
-                disabled={submitting}
-              >
-                {submitting ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.saveButtonText}>Ekle</Text>
-                )}
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.cancelButton]}
+                  onPress={() => {
+                    setModalVisible(false);
+                    setFormData({ yemekadi: '', aciklama: '', fiyat: '', kategoriad: 'Restorana Özel' });
+                  }}
+                >
+                  <Text style={styles.cancelButtonText}>İptal</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.saveButton]}
+                  onPress={handleAddMenuItem}
+                  disabled={submitting}
+                >
+                  {submitting ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.saveButtonText}>Ekle</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Kategori Seçim Modal */}
+      <Modal
+        visible={categoryModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setCategoryModalVisible(false)}
+      >
+        <View style={styles.categoryModalOverlay}>
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={() => setCategoryModalVisible(false)}
+          />
+          <View style={styles.categoryModalContent}>
+            <View style={styles.categoryModalHeader}>
+              <Text style={styles.categoryModalTitle}>Kategori Seçin</Text>
+              <TouchableOpacity onPress={() => setCategoryModalVisible(false)}>
+                <Ionicons name="close" size={28} color="#666" />
               </TouchableOpacity>
             </View>
+            {KATEGORILER.map((kategori) => (
+              <TouchableOpacity
+                key={kategori}
+                style={[
+                  styles.categoryOption,
+                  formData.kategoriad === kategori && styles.categoryOptionSelected
+                ]}
+                onPress={() => {
+                  setFormData({ ...formData, kategoriad: kategori });
+                  setCategoryModalVisible(false);
+                }}
+              >
+                <Text style={[
+                  styles.categoryOptionText,
+                  formData.kategoriad === kategori && styles.categoryOptionTextSelected
+                ]}>
+                  {kategori}
+                </Text>
+                {formData.kategoriad === kategori && (
+                  <Ionicons name="checkmark" size={24} color="#4ECDC4" />
+                )}
+              </TouchableOpacity>
+            ))}
           </View>
-        </KeyboardAvoidingView>
+        </View>
       </Modal>
     </View>
   );
@@ -341,6 +405,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
     padding: 20,
   },
+  modalScrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+  },
   modalContent: {
     backgroundColor: '#fff',
     borderRadius: 12,
@@ -361,6 +429,73 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     fontSize: 16,
     backgroundColor: '#f9f9f9',
+    color: '#333',
+  },
+  categorySelector: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 15,
+    marginBottom: 15,
+    backgroundColor: '#f9f9f9',
+  },
+  categorySelectorContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  categorySelectorLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 4,
+  },
+  categorySelectorValue: {
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '500',
+  },
+  categoryModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  categoryModalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: 30,
+  },
+  categoryModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  categoryModalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  categoryOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f5f5f5',
+  },
+  categoryOptionSelected: {
+    backgroundColor: '#f0fffe',
+  },
+  categoryOptionText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  categoryOptionTextSelected: {
+    color: '#4ECDC4',
+    fontWeight: '600',
   },
   modalButtons: {
     flexDirection: 'row',
