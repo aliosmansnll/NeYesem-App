@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { colors, gradients } from '../theme/colors';
 import { spacing, borderRadius, shadows } from '../theme/spacing';
 import { typography } from '../theme/typography';
+import { moderateScale, scaleFontSize } from '../utils/responsive';
 
 export default function Button({ 
   title, 
@@ -27,10 +28,10 @@ export default function Button({
 
   const getSize = () => {
     switch(size) {
-      case 'small': return { padding: spacing.sm, fontSize: 14 };
-      case 'medium': return { padding: spacing.md, fontSize: 16 };
-      case 'large': return { padding: spacing.lg, fontSize: 18 };
-      default: return { padding: spacing.md, fontSize: 16 };
+      case 'small': return { padding: moderateScale(spacing.sm), fontSize: scaleFontSize(14) };
+      case 'medium': return { padding: moderateScale(spacing.md), fontSize: scaleFontSize(16) };
+      case 'large': return { padding: moderateScale(spacing.lg), fontSize: scaleFontSize(18) };
+      default: return { padding: moderateScale(spacing.md), fontSize: scaleFontSize(16) };
     }
   };
 
@@ -93,7 +94,7 @@ export default function Button({
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: borderRadius.md,
+    borderRadius: moderateScale(borderRadius.md),
     overflow: 'hidden',
     ...shadows.medium,
   },
@@ -107,7 +108,7 @@ const styles = StyleSheet.create({
   content: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: moderateScale(spacing.sm),
   },
   text: {
     color: colors.white,
@@ -115,7 +116,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   icon: {
-    fontSize: 20,
+    fontSize: scaleFontSize(20),
   },
   disabled: {
     opacity: 0.5,
@@ -124,7 +125,7 @@ const styles = StyleSheet.create({
   outlineButton: {
     borderWidth: 2,
     borderColor: colors.primary,
-    borderRadius: borderRadius.md,
+    borderRadius: moderateScale(borderRadius.md),
     alignItems: 'center',
     justifyContent: 'center',
   },

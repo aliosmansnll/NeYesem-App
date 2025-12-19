@@ -110,11 +110,12 @@ export const loginRestaurant = async (mail, password) => {
   }
 };
 
-export const getAllRestaurants = async (skip = 0, limit = 100) => {
+export const getAllRestaurants = async (skip = 0, limit = 100, search = null) => {
   try {
-    const response = await api.get('/restaurants/', {
-      params: { skip, limit }
-    });
+    const params = { skip, limit };
+    if (search) params.search = search;
+    
+    const response = await api.get('/restaurants/', { params });
     return response.data;
   } catch (error) {
     throw error.response?.data?.detail || 'Restoranlar getirilemedi';
@@ -127,6 +128,15 @@ export const getRestaurant = async (restaurantId) => {
     return response.data;
   } catch (error) {
     throw error.response?.data?.detail || 'Restoran bulunamadı';
+  }
+};
+
+export const updateRestaurant = async (restaurantId, restaurantData) => {
+  try {
+    const response = await api.put(`/restaurants/${restaurantId}`, restaurantData);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data?.detail || 'Restoran güncellenemedi';
   }
 };
 
@@ -274,6 +284,47 @@ export const setVitrinPhoto = async (photoId) => {
     return response.data;
   } catch (error) {
     throw error.response?.data?.detail || 'Vitrin fotoğraf işaretlenemedi';
+  }
+};
+
+// ==================== TIKTOK ENDPOINTS ====================
+
+export const getTikTokVideos = async (restorantID) => {
+  try {
+    const response = await api.get(`/tiktok/restaurant/${restorantID}`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data?.detail || 'TikTok videoları alınamadı';
+  }
+};
+
+export const getTikTokThumbnail = async (url) => {
+  try {
+    const response = await api.get('/tiktok/thumbnail', {
+      params: { url }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Thumbnail çekilemedi:', error);
+    return null;
+  }
+};
+
+export const addTikTokVideo = async (videoData) => {
+  try {
+    const response = await api.post('/tiktok/', videoData);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data?.detail || 'Video eklenemedi';
+  }
+};
+
+export const deleteTikTokVideo = async (tiktokID) => {
+  try {
+    await api.delete(`/tiktok/${tiktokID}`);
+    return true;
+  } catch (error) {
+    throw error.response?.data?.detail || 'Video silinemedi';
   }
 };
 

@@ -12,14 +12,19 @@ import {
   Dimensions,
   ImageBackground,
   Modal,
+  Linking,
+  FlatList,
 } from 'react-native';
+import { WebView } from 'react-native-webview';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   getRestaurantMenu,
   getRestaurantReviews,
   getRestaurantOnlyReviews,
   getRestaurantPhotos,
+  getTikTokVideos,
   API_URL,
 } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -31,12 +36,21 @@ export default function RestaurantDetailScreen({ route, navigation }) {
   const [menu, setMenu] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [restaurantReviews, setRestaurantReviews] = useState([]);
+  const [displayedReviewsCount, setDisplayedReviewsCount] = useState(5);
+  const [loadingMoreReviews, setLoadingMoreReviews] = useState(false);
   const [photos, setPhotos] = useState([]);
+  const [tiktokVideos, setTiktokVideos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState('menu'); // menu, reviews, photos
+  const [activeTab, setActiveTab] = useState('menu'); // menu, reviews, photos, tiktok
   const [selectedPhoto, setSelectedPhoto] = useState(null);
   const { user } = useAuth();
+
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchData();
+    }, [])
+  );
 
   useEffect(() => {
     fetchData();
@@ -44,18 +58,26 @@ export default function RestaurantDetailScreen({ route, navigation }) {
 
   const fetchData = async () => {
     try {
-      const [menuData, allReviews, restReviews, photosData] = await Promise.all([
+      const [menuData, allReviews, restReviews, photosData, tiktokData] = await Promise.all([
         getRestaurantMenu(restaurant.restorantID),
         getRestaurantReviews(restaurant.restorantID),
         getRestaurantOnlyReviews(restaurant.restorantID),
         getRestaurantPhotos(restaurant.restorantID),
+        getTikTokVideos(restaurant.restorantID),
       ]);
       setMenu(menuData);
       setReviews(allReviews);
-      setRestaurantReviews(restReviews);
+      
+      // allReviews hem restoran hem menü yorumlarını içerir
+      setRestaurantReviews(allReviews);
+      setDisplayedReviewsCount(5); // Reset to initial count
+      
       // Vitrin fotoğrafını önce göster
       const sortedPhotos = photosData.sort((a, b) => (b.vitrin ? 1 : 0) - (a.vitrin ? 1 : 0));
       setPhotos(sortedPhotos);
+      
+      // TikTok videolarını yükle
+      setTiktokVideos(tiktokData);
     } catch (error) {
       Alert.alert('Hata', 'Veriler yüklenemedi');
       console.error(error);
@@ -68,6 +90,19 @@ export default function RestaurantDetailScreen({ route, navigation }) {
   const onRefresh = () => {
     setRefreshing(true);
     fetchData();
+  };
+
+  // TikTok kısa linkini gerçek video ID'sine çevir
+  const openTikTokVideo = async (tiktokURL) => {
+    try {
+      console.log('TikTok URL açılıyor:', tiktokURL);
+      
+      // Direkt URL'yi aç - tarayıcı veya TikTok uygulaması otomatik yönlendirecek
+      await Linking.openURL(tiktokURL);
+    } catch (error) {
+      console.error('TikTok açma hatası:', error);
+      Alert.alert('Hata', 'Video açılamadı. Lütfen TikTok uygulamasının yüklü olduğundan emin olun.');
+    }
   };
 
   const handleAddReview = () => {
@@ -83,6 +118,29 @@ export default function RestaurantDetailScreen({ route, navigation }) {
       restaurant,
       onReviewAdded: fetchData,
     });
+  };
+
+  const handleScroll = (event) => {
+    if (activeTab !== 'reviews' || loadingMoreReviews) return;
+    if (displayedReviewsCount >= restaurantReviews.length) return;
+
+    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+    const paddingToBottom = 20;
+    const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
+
+    if (isCloseToBottom) {
+      loadMoreReviews();
+    }
+  };
+
+  const loadMoreReviews = () => {
+    if (loadingMoreReviews || displayedReviewsCount >= restaurantReviews.length) return;
+    
+    setLoadingMoreReviews(true);
+    setTimeout(() => {
+      setDisplayedReviewsCount(prev => Math.min(prev + 5, restaurantReviews.length));
+      setLoadingMoreReviews(false);
+    }, 300);
   };
 
   const renderStars = (rating) => {
@@ -117,6 +175,8 @@ export default function RestaurantDetailScreen({ route, navigation }) {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#FF6B6B']} />
         }
+        onScroll={handleScroll}
+        scrollEventThrottle={400}
       >
         {/* Hero Image with Restaurant Info */}
         <View style={styles.heroSection}>
@@ -180,64 +240,142 @@ export default function RestaurantDetailScreen({ route, navigation }) {
 
         {/* Restaurant Info Card */}
         <View style={styles.infoCard}>
-          {(restaurant.sehir || restaurant.ilce) && (
-            <View style={styles.infoRow}>
-              <Ionicons name="location" size={20} color="#FF6B6B" />
-              <Text style={styles.infoText}>
-                {[restaurant.ilce, restaurant.sehir ? restaurant.sehir.replace(/\s*Merkez\s*$/i, '').trim() : ''].filter(Boolean).join(', ')}
-              </Text>
-            </View>
-          )}
-          {restaurant.telefon && (
-            <View style={styles.infoRow}>
-              <Ionicons name="call" size={20} color="#4ECDC4" />
-              <Text style={styles.infoText}>{String(restaurant.telefon)}</Text>
-            </View>
-          )}
+          <View style={styles.infoRow}>
+            {restaurant.telefon && (
+              <>
+                <Ionicons name="call" size={20} color="#4ECDC4" />
+                <Text style={styles.infoText}>{String(restaurant.telefon)}</Text>
+              </>
+            )}
+            {restaurant.telefon && (restaurant.sehir || restaurant.ilce) && (
+              <Text style={styles.infoSeparator}>•</Text>
+            )}
+            {(restaurant.sehir || restaurant.ilce) && (
+              <>
+                <Ionicons name="location" size={18} color="#FF6B6B" />
+                <Text style={styles.infoLocationText}>
+                  {[restaurant.ilce, restaurant.sehir ? restaurant.sehir.replace(/\s*Merkez\s*$/i, '').trim() : ''].filter(Boolean).join(', ')}
+                </Text>
+              </>
+            )}
+          </View>
         </View>
 
       {/* Tabs */}
-      <View style={styles.tabs}>
+      <ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false}
+        style={styles.tabsContainer}
+        contentContainerStyle={styles.tabsContent}
+      >
         <TouchableOpacity
           style={[styles.tab, activeTab === 'menu' && styles.activeTab]}
           onPress={() => setActiveTab('menu')}
+          activeOpacity={0.7}
         >
-          <Ionicons 
-            name={activeTab === 'menu' ? 'restaurant' : 'restaurant-outline'} 
-            size={20} 
-            color={activeTab === 'menu' ? '#FF6B6B' : '#999'} 
-          />
-          <Text style={[styles.tabText, activeTab === 'menu' && styles.activeTabText]}>
-            Menü ({String(menu.length)})
-          </Text>
+          <LinearGradient
+            colors={activeTab === 'menu' ? ['#FF6B6B', '#EE5A6F'] : ['#F8F9FA', '#F8F9FA']}
+            style={styles.tabGradient}
+          >
+            <View style={styles.tabIconBox}>
+              <Ionicons 
+                name={activeTab === 'menu' ? 'restaurant' : 'restaurant-outline'} 
+                size={22} 
+                color={activeTab === 'menu' ? '#fff' : '#666'} 
+              />
+            </View>
+            <Text style={[styles.tabText, activeTab === 'menu' && styles.activeTabText]}>
+              Menü
+            </Text>
+            <View style={[styles.tabBadge, activeTab === 'menu' && styles.activeTabBadge]}>
+              <Text style={[styles.tabBadgeText, activeTab === 'menu' && styles.activeTabBadgeText]}>
+                {String(menu.length)}
+              </Text>
+            </View>
+          </LinearGradient>
         </TouchableOpacity>
+
         <TouchableOpacity
           style={[styles.tab, activeTab === 'photos' && styles.activeTab]}
           onPress={() => setActiveTab('photos')}
+          activeOpacity={0.7}
         >
-          <Ionicons 
-            name={activeTab === 'photos' ? 'images' : 'images-outline'} 
-            size={20} 
-            color={activeTab === 'photos' ? '#FF6B6B' : '#999'} 
-          />
-          <Text style={[styles.tabText, activeTab === 'photos' && styles.activeTabText]}>
-            Fotoğraflar ({String(photos.length)})
-          </Text>
+          <LinearGradient
+            colors={activeTab === 'photos' ? ['#FFA94D', '#F76B1C'] : ['#F8F9FA', '#F8F9FA']}
+            style={styles.tabGradient}
+          >
+            <View style={styles.tabIconBox}>
+              <Ionicons 
+                name={activeTab === 'photos' ? 'images' : 'images-outline'} 
+                size={22} 
+                color={activeTab === 'photos' ? '#fff' : '#666'} 
+              />
+            </View>
+            <Text style={[styles.tabText, activeTab === 'photos' && styles.activeTabText]}>
+              Galeri
+            </Text>
+            <View style={[styles.tabBadge, activeTab === 'photos' && styles.activeTabBadge]}>
+              <Text style={[styles.tabBadgeText, activeTab === 'photos' && styles.activeTabBadgeText]}>
+                {String(photos.length)}
+              </Text>
+            </View>
+          </LinearGradient>
         </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'tiktok' && styles.activeTab]}
+          onPress={() => setActiveTab('tiktok')}
+          activeOpacity={0.7}
+        >
+          <LinearGradient
+            colors={activeTab === 'tiktok' ? ['#FF0050', '#EE0A6F'] : ['#F8F9FA', '#F8F9FA']}
+            style={styles.tabGradient}
+          >
+            <View style={styles.tabIconBox}>
+              <Ionicons 
+                name="logo-tiktok"
+                size={22} 
+                color={activeTab === 'tiktok' ? '#fff' : '#666'} 
+              />
+            </View>
+            <Text style={[styles.tabText, activeTab === 'tiktok' && styles.activeTabText]}>
+              TikTok
+            </Text>
+            <View style={[styles.tabBadge, activeTab === 'tiktok' && styles.activeTabBadge]}>
+              <Text style={[styles.tabBadgeText, activeTab === 'tiktok' && styles.activeTabBadgeText]}>
+                {tiktokVideos.length}
+              </Text>
+            </View>
+          </LinearGradient>
+        </TouchableOpacity>
+
         <TouchableOpacity
           style={[styles.tab, activeTab === 'reviews' && styles.activeTab]}
           onPress={() => setActiveTab('reviews')}
+          activeOpacity={0.7}
         >
-          <Ionicons 
-            name={activeTab === 'reviews' ? 'chatbubbles' : 'chatbubbles-outline'} 
-            size={20} 
-            color={activeTab === 'reviews' ? '#FF6B6B' : '#999'} 
-          />
-          <Text style={[styles.tabText, activeTab === 'reviews' && styles.activeTabText]}>
-            Yorumlar ({String(restaurantReviews.length)})
-          </Text>
+          <LinearGradient
+            colors={activeTab === 'reviews' ? ['#4ECDC4', '#44A08D'] : ['#F8F9FA', '#F8F9FA']}
+            style={styles.tabGradient}
+          >
+            <View style={styles.tabIconBox}>
+              <Ionicons 
+                name={activeTab === 'reviews' ? 'chatbubbles' : 'chatbubbles-outline'} 
+                size={22} 
+                color={activeTab === 'reviews' ? '#fff' : '#666'} 
+              />
+            </View>
+            <Text style={[styles.tabText, activeTab === 'reviews' && styles.activeTabText]}>
+              Yorumlar
+            </Text>
+            <View style={[styles.tabBadge, activeTab === 'reviews' && styles.activeTabBadge]}>
+              <Text style={[styles.tabBadgeText, activeTab === 'reviews' && styles.activeTabBadgeText]}>
+                {String(restaurantReviews.length)}
+              </Text>
+            </View>
+          </LinearGradient>
         </TouchableOpacity>
-      </View>
+      </ScrollView>
 
       <View style={styles.content}>
         {activeTab === 'menu' && (
@@ -319,6 +457,51 @@ export default function RestaurantDetailScreen({ route, navigation }) {
           </View>
         )}
 
+        {activeTab === 'tiktok' && tiktokVideos.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.tiktokHeader}>
+              <Ionicons name="logo-tiktok" size={24} color="#FF6B6B" />
+              <Text style={styles.tiktokTitle}>TikTok Videoları ({tiktokVideos.length})</Text>
+            </View>
+            
+            {/* 3 Column Grid */}
+            <View style={styles.tiktokGrid}>
+              {tiktokVideos.map((video, index) => (
+                <TouchableOpacity
+                  key={video.tiktokID}
+                  style={styles.tiktokGridItem}
+                  onPress={() => openTikTokVideo(video.tiktokURL)}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.tiktokThumbnailContainer}>
+                    {video.thumbnailURL ? (
+                      /* Gerçek TikTok thumbnail */
+                      <Image
+                        source={{ uri: video.thumbnailURL }}
+                        style={styles.tiktokThumbnail}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      /* Fallback gradient */
+                      <LinearGradient
+                        colors={['#FF0050', '#00F2EA']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={styles.tiktokThumbnail}
+                      >
+                        <Ionicons name="logo-tiktok" size={50} color="rgba(255,255,255,0.4)" />
+                      </LinearGradient>
+                    )}
+                    <View style={styles.tiktokOverlay}>
+                      <Ionicons name="play-circle" size={48} color="rgba(255,255,255,0.9)" />
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
+
         {activeTab === 'reviews' && (
           <View style={styles.section}>
             <TouchableOpacity
@@ -342,40 +525,55 @@ export default function RestaurantDetailScreen({ route, navigation }) {
                 <Text style={styles.emptyText}>Henüz yorum bulunmuyor 💬</Text>
               </View>
             ) : (
-              restaurantReviews.map((review) => (
-                <View key={String(review.yorumID || Math.random())} style={styles.reviewCard}>
-                  <View style={styles.reviewHeader}>
-                    <View style={styles.reviewUserAvatar}>
-                      <Ionicons name="person" size={20} color="#fff" />
+              <>
+                {restaurantReviews.slice(0, displayedReviewsCount).map((review) => (
+                  <View key={String(review.yorumID || Math.random())} style={styles.reviewCard}>
+                    <View style={styles.reviewHeader}>
+                      <View style={styles.reviewUserAvatar}>
+                        <Ionicons name="person" size={20} color="#fff" />
+                      </View>
+                      <View style={styles.reviewUserInfo}>
+                        <Text style={styles.reviewUser}>
+                          {review.kullaniciAd && review.kullaniciSoyad 
+                            ? `${review.kullaniciAd} ${review.kullaniciSoyad}`
+                            : `Kullanıcı #${review.kullaniciID || 0}`}
+                        </Text>
+                        <Text style={styles.reviewDate}>
+                          {review.yorumTarih ? new Date(review.yorumTarih).toLocaleDateString('tr-TR') : 'Tarih yok'}
+                        </Text>
+                      </View>
                     </View>
-                    <View style={styles.reviewUserInfo}>
-                      <Text style={styles.reviewUser}>
-                        {review.kullaniciAd && review.kullaniciSoyad 
-                          ? `${review.kullaniciAd} ${review.kullaniciSoyad}`
-                          : `Kullanıcı #${review.kullaniciID || 0}`}
-                      </Text>
-                      <Text style={styles.reviewDate}>
-                        {review.yorumTarih ? new Date(review.yorumTarih).toLocaleDateString('tr-TR') : 'Tarih yok'}
-                      </Text>
-                    </View>
+                    {review.menuID && review.menuAd && (
+                      <View style={styles.menuBadge}>
+                        <Ionicons name="restaurant" size={14} color="#FF6B6B" />
+                        <Text style={styles.menuBadgeText}>{review.menuAd}</Text>
+                      </View>
+                    )}
+                    {review.puan && (
+                      <View style={styles.reviewRatingContainer}>
+                        {[...Array(5)].map((_, i) => (
+                          <Ionicons 
+                            key={i}
+                            name={i < review.puan ? 'star' : 'star-outline'} 
+                            size={16} 
+                            color="#FFD700" 
+                          />
+                        ))}
+                      </View>
+                    )}
+                    {review.yorum && (
+                      <Text style={styles.reviewText}>{review.yorum}</Text>
+                    )}
                   </View>
-                  {review.puan && (
-                    <View style={styles.reviewRatingContainer}>
-                      {[...Array(5)].map((_, i) => (
-                        <Ionicons 
-                          key={i}
-                          name={i < review.puan ? 'star' : 'star-outline'} 
-                          size={16} 
-                          color="#FFD700" 
-                        />
-                      ))}
-                    </View>
-                  )}
-                  {review.yorum && (
-                    <Text style={styles.reviewText}>{review.yorum}</Text>
-                  )}
-                </View>
-              ))
+                ))}
+                
+                {loadingMoreReviews && (
+                  <View style={styles.loadingMoreContainer}>
+                    <ActivityIndicator size="small" color="#4ECDC4" />
+                    <Text style={styles.loadingMoreText}>Yüklüyor...</Text>
+                  </View>
+                )}
+              </>
             )}
           </View>
         )}
@@ -508,41 +706,71 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     marginLeft: 12,
-    flex: 1,
   },
-  tabs: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
+  infoSeparator: {
+    fontSize: 14,
+    color: '#ccc',
+    marginHorizontal: 8,
+  },
+  infoLocationText: {
+    fontSize: 13,
+    color: '#999',
+    marginLeft: 6,
+  },
+  tabsContainer: {
     marginTop: 15,
-    marginHorizontal: 15,
-    borderRadius: 12,
-    padding: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    marginBottom: 10,
+  },
+  tabsContent: {
+    paddingHorizontal: 15,
+    gap: 12,
   },
   tab: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: 8,
-    gap: 6,
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
   },
-  activeTab: {
-    backgroundColor: '#FFF5F5',
+  tabGradient: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    minWidth: 100,
+    alignItems: 'center',
+  },
+  tabIconBox: {
+    marginBottom: 6,
   },
   tabText: {
     fontSize: 13,
-    color: '#999',
-    fontWeight: '500',
+    color: '#666',
+    fontWeight: '600',
+    marginBottom: 4,
   },
   activeTabText: {
-    color: '#FF6B6B',
+    color: '#fff',
     fontWeight: 'bold',
+  },
+  tabBadge: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    minWidth: 28,
+    alignItems: 'center',
+  },
+  activeTabBadge: {
+    backgroundColor: 'rgba(255,255,255,0.3)',
+  },
+  tabBadgeText: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: '#666',
+  },
+  activeTabBadgeText: {
+    color: '#fff',
   },
   content: {
     flex: 1,
@@ -676,6 +904,22 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     gap: 2,
   },
+  menuBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#FFF5F5',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    marginBottom: 10,
+    alignSelf: 'flex-start',
+  },
+  menuBadgeText: {
+    fontSize: 13,
+    color: '#FF6B6B',
+    fontWeight: '600',
+  },
   reviewText: {
     fontSize: 14,
     color: '#666',
@@ -689,6 +933,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#999',
     marginTop: 12,
+  },
+  loadingMoreContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    gap: 10,
+  },
+  loadingMoreText: {
+    fontSize: 14,
+    color: '#999',
   },
   photoGrid: {
     flexDirection: 'row',
@@ -721,6 +976,156 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 10,
     fontWeight: 'bold',
+  },
+  tiktokHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 16,
+  },
+  tiktokTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#333',
+  },
+  tiktokGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  tiktokGridItem: {
+    width: '31%',
+    marginBottom: 12,
+  },
+  tiktokThumbnailContainer: {
+    width: '100%',
+    aspectRatio: 9 / 16,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: '#f0f0f0',
+    position: 'relative',
+  },
+  tiktokThumbnail: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  tiktokOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  tiktokExternalModalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  tiktokExternalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
+    alignItems: 'center',
+  },
+  tiktokExternalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 16,
+  },
+  tiktokExternalTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  tiktokExternalDescription: {
+    fontSize: 15,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 22,
+  },
+  tiktokOpenButton: {
+    width: '100%',
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  tiktokOpenGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    gap: 10,
+  },
+  tiktokOpenText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  tiktokCancelButton: {
+    padding: 12,
+  },
+  tiktokCancelText: {
+    fontSize: 16,
+    color: '#999',
+    fontWeight: '600',
+  },
+  tiktokModalContainer: {
+    flex: 1,
+    backgroundColor: '#000',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  tiktokFloatingCloseButton: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    zIndex: 999,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 20,
+  },
+  tiktokModalContent: {
+    width: width * 0.9,
+    height: width * 0.9 * (16 / 9),
+    maxHeight: '75%',
+    backgroundColor: '#000',
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  tiktokModalWebView: {
+    flex: 1,
+    backgroundColor: '#000',
+  },
+  tiktokLoadingContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+    gap: 12,
+  },
+  tiktokLoadingText: {
+    fontSize: 14,
+    color: '#999',
+    marginTop: 8,
   },
   modalContainer: {
     flex: 1,

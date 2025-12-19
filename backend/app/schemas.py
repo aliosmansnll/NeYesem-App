@@ -83,6 +83,7 @@ class YorumResponse(BaseModel):
     yorumTarih: datetime
     kullaniciAd: Optional[str] = None
     kullaniciSoyad: Optional[str] = None
+    menuAd: Optional[str] = None
     
     class Config:
         from_attributes = True
@@ -108,6 +109,22 @@ class MenuFotoResponse(BaseModel):
     fotoID: int
     menuID: int
     fotoURL: str
+    
+    class Config:
+        from_attributes = True
+
+class RestorantTikTokBase(BaseModel):
+    tiktokURL: str
+    baslik: Optional[str] = None
+    thumbnailURL: Optional[str] = None
+
+class RestorantTikTokCreate(RestorantTikTokBase):
+    restorantID: int
+
+class RestorantTikTokResponse(RestorantTikTokBase):
+    tiktokID: int
+    restorantID: int
+    eklenmeTarih: datetime
     
     class Config:
         from_attributes = True

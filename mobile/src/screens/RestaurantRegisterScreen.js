@@ -96,11 +96,20 @@ export default function RestaurantRegisterScreen({ navigation }) {
       const address = await Location.reverseGeocodeAsync({ latitude, longitude });
       if (address && address.length > 0) {
         const location = address[0];
-        let city = location.city || location.region || '';
-        const district = location.district || location.subregion || '';
+        
+        // İl bilgisi: region (İl düzeyinde bilgi)
+        let city = location.region || location.city || '';
+        
+        // İlçe bilgisi: district veya city (district yoksa city'yi ilçe olarak kullan)
+        // Ama eğer city zaten region ile aynıysa, subregion'ı kullan
+        let district = location.district || '';
+        if (!district && location.city && location.city !== city) {
+          district = location.city;
+        }
         
         // Şehir adından 'Merkez' kelimesini temizle
         city = city.replace(/\s*Merkez\s*$/i, '').trim();
+        district = district.replace(/\s*Merkez\s*$/i, '').trim();
         
         updateField('sehir', city);
         updateField('ilce', district);

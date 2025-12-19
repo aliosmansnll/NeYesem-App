@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { colors } from '../theme/colors';
 import { spacing, borderRadius, shadows } from '../theme/spacing';
+import { moderateScale } from '../utils/responsive';
 
 export default function Card({ 
   children, 
@@ -24,9 +25,9 @@ export default function Card({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.white,
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    marginBottom: spacing.md,
+    borderRadius: moderateScale(borderRadius.lg),
+    padding: moderateScale(spacing.lg),
+    marginBottom: moderateScale(spacing.md),
     ...shadows.medium,
   },
 });

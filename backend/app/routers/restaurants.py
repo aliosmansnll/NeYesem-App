@@ -69,9 +69,14 @@ def login_restaurant(credentials: schemas.RestorantLogin, db: Session = Depends(
     }
 
 @router.get("/")
-def get_all_restaurants(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+def get_all_restaurants(
+    skip: int = 0, 
+    limit: int = 100, 
+    search: str = None, 
+    db: Session = Depends(get_db)
+):
     """Tüm restoranları listele - ortalama puan ve yorum sayısı ile birlikte, yüksek puandan düşüğe sıralı"""
-    from sqlalchemy import func, case, desc
+    from sqlalchemy import func, case, desc, or_
     
     # Subquery ile ortalama puanı hesapla
     avg_rating_subquery = db.query(
@@ -90,7 +95,18 @@ def get_all_restaurants(skip: int = 0, limit: int = 100, db: Session = Depends(g
     ).outerjoin(
         avg_rating_subquery,
         models.RestorantHesap.restorantID == avg_rating_subquery.c.restorantID
-    ).order_by(
+    )
+    
+    # Şehir veya ilçe filtreleme (OR mantığı ile)
+    if search:
+        restaurants_query = restaurants_query.filter(
+            or_(
+                models.RestorantHesap.sehir.ilike(f'%{search}%'),
+                models.RestorantHesap.ilce.ilike(f'%{search}%')
+            )
+        )
+    
+    restaurants_query = restaurants_query.order_by(
         desc('avg_puan')
     ).offset(skip).limit(limit)
     
@@ -125,6 +141,60 @@ def get_restaurant(restoran_id: int, db: Session = Depends(get_db)):
     if not restaurant:
         raise HTTPException(status_code=404, detail="Restoran bulunamadı")
     return restaurant
+
+@router.put("/{restoran_id}", response_model=schemas.RestorantResponse)
+def update_restaurant(restoran_id: int, restaurant_update: schemas.RestorantBase, db: Session = Depends(get_db)):
+    """Restoran bilgilerini güncelle"""
+    restaurant = db.query(models.RestorantHesap).filter(models.RestorantHesap.restorantID == restoran_id).first()
+    if not restaurant:
+        raise HTTPException(status_code=404, detail="Restoran bulunamadı")
+    
+    # Güncellenebilir alanları kontrol et ve güncelle
+    if restaurant_update.ad is not None:
+        restaurant.ad = restaurant_update.ad
+    if restaurant_update.telefon is not None:
+        restaurant.telefon = restaurant_update.telefon
+    if restaurant_update.latitude is not None:
+        restaurant.latitude = restaurant_update.latitude
+    if restaurant_update.longitude is not None:
+        restaurant.longitude = restaurant_update.longitude
+    if restaurant_update.sehir is not None:
+        restaurant.sehir = restaurant_update.sehir
+    if restaurant_update.ilce is not None:
+        restaurant.ilce = restaurant_update.ilce
+    if restaurant_update.tiktokURL is not None:
+        restaurant.tiktokURL = restaurant_update.tiktokURL
+    
+    try:
+        db.commit()
+        db.refresh(restaurant)
+        return restaurant
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Güncelleme başarısız: {str(e)}")
+
+@router.delete("/bulk-delete", status_code=status.HTTP_204_NO_CONTENT)
+def delete_all_restaurants(db: Session = Depends(get_db)):
+    """UYARI: Tüm restoran hesaplarını sil"""
+    try:
+        # Önce bağımlı kayıtları sil
+        # Tüm yorumları sil
+        db.query(models.Yorum).delete(synchronize_session=False)
+        # Tüm TikTok videolarını sil
+        db.query(models.RestorantTikTok).delete(synchronize_session=False)
+        # Tüm menü fotoğraflarını sil
+        db.query(models.MenuFoto).delete(synchronize_session=False)
+        # Tüm menüleri sil
+        db.query(models.RestorantMenu).delete(synchronize_session=False)
+        # Tüm restoran fotoğraflarını sil
+        db.query(models.RestorantFoto).delete(synchronize_session=False)
+        # Son olarak tüm restoranları sil
+        deleted_count = db.query(models.RestorantHesap).delete(synchronize_session=False)
+        db.commit()
+        return None
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Silme işlemi başarısız: {str(e)}")
 
 @router.delete("/{restoran_id}", status_code=status.HTTP_200_OK)
 def delete_restaurant(restoran_id: int, db: Session = Depends(get_db)):

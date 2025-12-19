@@ -9,14 +9,17 @@ import {
   TouchableOpacity,
   Alert,
   Image,
+  TextInput,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import * as Location from 'expo-location';
 import { getAllRestaurants, getRestaurantPhotos, API_URL } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import Card from '../components/Card';
 import { colors, gradients } from '../theme/colors';
 import { spacing, borderRadius, shadows } from '../theme/spacing';
+import { moderateScale, scaleFontSize, verticalScale, wp, hp } from '../utils/responsive';
 
 export default function HomeScreen({ navigation }) {
   const [restaurants, setRestaurants] = useState([]);
@@ -26,15 +29,104 @@ export default function HomeScreen({ navigation }) {
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(0);
+  const [citySearch, setCitySearch] = useState('');
+  const [userCity, setUserCity] = useState('');
+  const [loadingLocation, setLoadingLocation] = useState(false);
   const { user, logout } = useAuth();
 
   const PAGE_SIZE = 6;
 
   useEffect(() => {
-    fetchRestaurants(true);
+    getUserLocation();
   }, []);
 
-  const fetchRestaurants = async (isInitial = false) => {
+  const getUserLocation = async () => {
+    try {
+      setLoadingLocation(true);
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        // İzin verilmediyse tüm restoranları göster
+        fetchRestaurants(true);
+        return;
+      }
+
+      const location = await Location.getCurrentPositionAsync({});
+      const address = await Location.reverseGeocodeAsync({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+      });
+
+      if (address && address.length > 0) {
+        const place = address[0];
+        let city = place.region || place.city || '';
+        city = city.replace(/\s*Merkez\s*$/i, '').trim();
+        
+        setUserCity(city);
+        // Kullanıcının şehrine göre restoranları getir (city'yi direkt gönder)
+        fetchRestaurants(true, city);
+      } else {
+        fetchRestaurants(true);
+      }
+    } catch (error) {
+      console.error('Konum alınamadı:', error);
+      fetchRestaurants(true);
+    } finally {
+      setLoadingLocation(false);
+    }
+  };
+
+  const handleSearch = () => {
+    fetchRestaurants(true);
+  };
+
+  const handleClearSearch = () => {
+    setCitySearch('');
+    // citySearch'ü temizledikten sonra userCity ile filtrele
+    fetchRestaurantsWithCity('');
+  };
+
+  const fetchRestaurantsWithCity = async (searchCity) => {
+    setLoading(true);
+    setPage(0);
+    setHasMore(true);
+
+    try {
+      const skip = 0;
+      
+      // searchCity varsa onu kullan, yoksa userCity kullan
+      const searchQuery = searchCity || userCity || null;
+      const data = await getAllRestaurants(skip, PAGE_SIZE, searchQuery);
+      
+      setRestaurants(data);
+      setPage(0);
+
+      // Her restoran için fotoğrafları çek
+      const photos = {};
+      await Promise.all(
+        data.map(async (restaurant) => {
+          try {
+            const photoData = await getRestaurantPhotos(restaurant.restorantID);
+            if (photoData && photoData.length > 0) {
+              const vitrinPhoto = photoData.find(p => p.vitrin);
+              photos[restaurant.restorantID] = vitrinPhoto || photoData[0];
+            }
+          } catch (error) {
+            console.log(`Fotoğraf yüklenemedi: ${restaurant.restorantID}`);
+          }
+        })
+      );
+      
+      setRestaurantPhotos(prev => ({ ...prev, ...photos }));
+      setHasMore(data.length === PAGE_SIZE);
+    } catch (error) {
+      Alert.alert('Hata', 'Restoranlar yüklenemedi');
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchRestaurants = async (isInitial = false, locationCity = null) => {
     if (isInitial) {
       setLoading(true);
       setPage(0);
@@ -46,7 +138,10 @@ export default function HomeScreen({ navigation }) {
 
     try {
       const skip = isInitial ? 0 : (page + 1) * PAGE_SIZE;
-      const data = await getAllRestaurants(skip, PAGE_SIZE);
+      
+      // Arama varsa onu kullan, yoksa locationCity veya userCity kullan
+      const searchQuery = citySearch || locationCity || userCity || null;
+      const data = await getAllRestaurants(skip, PAGE_SIZE, searchQuery);
       
       // Backend zaten sıralı gönderiyor, frontend'de sıralamaya gerek yok
 
@@ -247,7 +342,28 @@ export default function HomeScreen({ navigation }) {
       </View>
 
       <View style={styles.contentSection}>
-        <Text style={styles.sectionTitle}>Popüler Restoranlar</Text>
+        {/* Şehir Arama */}
+        <View style={styles.searchContainer}>
+          <Ionicons name="search" size={20} color="#999" style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Şehir veya ilçe ara..."
+            placeholderTextColor="#999"
+            value={citySearch}
+            onChangeText={setCitySearch}
+            onSubmitEditing={handleSearch}
+            returnKeyType="search"
+          />
+          {citySearch.length > 0 && (
+            <TouchableOpacity onPress={handleClearSearch} style={styles.clearButton}>
+              <Ionicons name="close-circle" size={20} color="#999" />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        <Text style={styles.sectionTitle}>
+          {userCity ? `${userCity} - Yakındaki Restoranlar` : 'Yakındaki Restoranlar'}
+        </Text>
         <FlatList
           data={restaurants}
           renderItem={renderRestaurant}
@@ -304,17 +420,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    marginTop: spacing.md,
-    fontSize: 16,
+    marginTop: moderateScale(spacing.md),
+    fontSize: scaleFontSize(16),
     color: colors.textSecondary,
     fontWeight: '500',
   },
   header: {
-    paddingTop: spacing.xxxl + spacing.lg,
-    paddingBottom: spacing.xl,
-    paddingHorizontal: spacing.xl,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    paddingTop: moderateScale(spacing.xxxl + spacing.lg),
+    paddingBottom: moderateScale(spacing.xl),
+    paddingHorizontal: moderateScale(spacing.xl),
+    borderBottomLeftRadius: moderateScale(24),
+    borderBottomRightRadius: moderateScale(24),
     ...shadows.large,
   },
   headerContent: {
@@ -403,6 +519,31 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.lg,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  searchIcon: {
+    marginRight: 10,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#333',
+  },
+  clearButton: {
+    padding: 4,
   },
   sectionTitle: {
     fontSize: 20,

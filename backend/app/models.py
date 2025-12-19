@@ -36,6 +36,7 @@ class RestorantHesap(Base):
     menuler = relationship("RestorantMenu", back_populates="restoran")
     yorumlar = relationship("Yorum", back_populates="restoran")
     fotolar = relationship("RestorantFoto", back_populates="restoran")
+    tiktokVideolar = relationship("RestorantTikTok", back_populates="restoran")
 
 class RestorantMenu(Base):
     __tablename__ = "RestorantMenu"
@@ -83,3 +84,15 @@ class RestorantFoto(Base):
     vitrin = Column(Boolean, default=False)
     
     restoran = relationship("RestorantHesap", back_populates="fotolar")
+
+class RestorantTikTok(Base):
+    __tablename__ = "RestorantTikTok"
+    
+    tiktokID = Column(Integer, primary_key=True, index=True)
+    restorantID = Column(Integer, ForeignKey("RestorantHesap.restorantID"), nullable=False)
+    tiktokURL = Column(String(500), nullable=False)
+    baslik = Column(String(200))
+    thumbnailURL = Column(String(500))
+    eklenmeTarih = Column(DateTime, default=datetime.utcnow)
+    
+    restoran = relationship("RestorantHesap", back_populates="tiktokVideolar")

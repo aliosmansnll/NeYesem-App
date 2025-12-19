@@ -64,9 +64,9 @@ def create_review(review: schemas.YorumCreate, db: Session = Depends(get_db)):
 @router.get("/restaurant/{restoran_id}", response_model=List[schemas.YorumResponse])
 def get_restaurant_reviews(restoran_id: int, db: Session = Depends(get_db)):
     """Restoranın tüm yorumlarını getir (restoran + menü yorumları)"""
-    reviews = db.query(models.Yorum).filter(models.Yorum.restorantID == restoran_id).all()
+    reviews = db.query(models.Yorum).filter(models.Yorum.restorantID == restoran_id).order_by(models.Yorum.yorumTarih.desc()).all()
     
-    # Kullanıcı bilgilerini ekle
+    # Kullanıcı ve menü bilgilerini ekle
     result = []
     for review in reviews:
         review_dict = {
@@ -79,12 +79,20 @@ def get_restaurant_reviews(restoran_id: int, db: Session = Depends(get_db)):
             "fotoURL": review.fotoURL,
             "yorumTarih": review.yorumTarih,
             "kullaniciAd": None,
-            "kullaniciSoyad": None
+            "kullaniciSoyad": None,
+            "menuAd": None
         }
         user = db.query(models.KullaniciHesap).filter(models.KullaniciHesap.kullaniciID == review.kullaniciID).first()
         if user:
             review_dict["kullaniciAd"] = user.ad
             review_dict["kullaniciSoyad"] = user.soyad
+        
+        # Eğer menü yorumu ise menü adını da ekle
+        if review.menuID:
+            menu = db.query(models.RestorantMenu).filter(models.RestorantMenu.menuID == review.menuID).first()
+            if menu:
+                review_dict["menuAd"] = menu.yemekadi
+        
         result.append(review_dict)
     
     return result
@@ -95,7 +103,7 @@ def get_restaurant_only_reviews(restoran_id: int, db: Session = Depends(get_db))
     reviews = db.query(models.Yorum).filter(
         models.Yorum.restorantID == restoran_id,
         models.Yorum.menuID == None
-    ).all()
+    ).order_by(models.Yorum.yorumTarih.desc()).all()
     
     # Kullanıcı bilgilerini ekle
     result = []
@@ -123,7 +131,7 @@ def get_restaurant_only_reviews(restoran_id: int, db: Session = Depends(get_db))
 @router.get("/menu/{menu_id}", response_model=List[schemas.YorumResponse])
 def get_menu_reviews(menu_id: int, db: Session = Depends(get_db)):
     """Belirli menü öğesinin yorumlarını getir"""
-    reviews = db.query(models.Yorum).filter(models.Yorum.menuID == menu_id).all()
+    reviews = db.query(models.Yorum).filter(models.Yorum.menuID == menu_id).order_by(models.Yorum.yorumTarih.desc()).all()
     
     # Kullanıcı bilgilerini ekle
     result = []
@@ -151,7 +159,7 @@ def get_menu_reviews(menu_id: int, db: Session = Depends(get_db)):
 @router.get("/user/{kullanici_id}", response_model=List[schemas.YorumResponse])
 def get_user_reviews(kullanici_id: int, db: Session = Depends(get_db)):
     """Kullanıcının tüm yorumlarını getir"""
-    reviews = db.query(models.Yorum).filter(models.Yorum.kullaniciID == kullanici_id).all()
+    reviews = db.query(models.Yorum).filter(models.Yorum.kullaniciID == kullanici_id).order_by(models.Yorum.yorumTarih.desc()).all()
     
     # Kullanıcı bilgilerini ekle
     result = []
@@ -175,3 +183,36 @@ def get_user_reviews(kullanici_id: int, db: Session = Depends(get_db)):
         result.append(review_dict)
     
     return result
+@router.delete("/bulk-delete", status_code=status.HTTP_204_NO_CONTENT)
+def delete_all_reviews(db: Session = Depends(get_db)):
+    """UYARI: Tüm yorumları sil"""
+    try:
+        deleted_count = db.query(models.Yorum).delete(synchronize_session=False)
+        db.commit()
+        return None
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Silme işlemi başarısız: {str(e)}")
+
+@router.delete("/restaurant/{restoran_id}/all", status_code=status.HTTP_204_NO_CONTENT)
+def delete_all_restaurant_reviews(restoran_id: int, db: Session = Depends(get_db)):
+    """Belirli bir restoranın tüm yorumlarını sil"""
+    restoran = db.query(models.RestorantHesap).filter(
+        models.RestorantHesap.restorantID == restoran_id
+    ).first()
+    
+    if not restoran:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Restoran bulunamadı"
+        )
+    
+    try:
+        deleted_count = db.query(models.Yorum).filter(
+            models.Yorum.restorantID == restoran_id
+        ).delete(synchronize_session=False)
+        db.commit()
+        return None
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Silme işlemi başarısız: {str(e)}")

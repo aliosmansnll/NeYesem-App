@@ -8,12 +8,14 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  FlatList,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useAuth } from '../context/AuthContext';
+import MapComponent from '../components/MapComponent';
+import { updateRestaurant, getTikTokVideos, addTikTokVideo, deleteTikTokVideo, getTikTokThumbnail } from '../services/api';
 
 export default function RestaurantEditScreen({ navigation }) {
   const { restaurant, logout } = useAuth();
@@ -24,6 +26,9 @@ export default function RestaurantEditScreen({ navigation }) {
     sehir: restaurant?.sehir || '',
     ilce: restaurant?.ilce || '',
   });
+  const [tiktokVideos, setTiktokVideos] = useState([]);
+  const [newTiktok, setNewTiktok] = useState({ url: '', baslik: '' });
+  const [loadingTiktok, setLoadingTiktok] = useState(false);
   const [markerCoordinate, setMarkerCoordinate] = useState(
     restaurant?.latitude && restaurant?.longitude
       ? {
@@ -40,12 +45,84 @@ export default function RestaurantEditScreen({ navigation }) {
   });
   const [gettingLocation, setGettingLocation] = useState(false);
 
+  useEffect(() => {
+    fetchTiktokVideos();
+  }, []);
+
+  const fetchTiktokVideos = async () => {
+    try {
+      const videos = await getTikTokVideos(restaurant.restorantID);
+      setTiktokVideos(videos);
+    } catch (error) {
+      console.error('TikTok videoları yüklenemedi:', error);
+    }
+  };
+
+  const handleAddTiktok = async () => {
+    if (!newTiktok.url.trim()) {
+      Alert.alert('Hata', 'Lütfen TikTok video URL\'si girin');
+      return;
+    }
+
+    setLoadingTiktok(true);
+    try {
+      // TikTok oembed API'den thumbnail al
+      console.log('Thumbnail çekiliyor:', newTiktok.url);
+      const thumbnailData = await getTikTokThumbnail(newTiktok.url);
+      
+      let thumbnailURL = null;
+      if (thumbnailData && thumbnailData.thumbnailURL) {
+        thumbnailURL = thumbnailData.thumbnailURL;
+        console.log('Thumbnail alındı:', thumbnailURL);
+      } else {
+        console.warn('Thumbnail alınamadı');
+      }
+
+      await addTikTokVideo({
+        restorantID: restaurant.restorantID,
+        tiktokURL: newTiktok.url,
+        baslik: newTiktok.baslik || thumbnailData?.title || null,
+        thumbnailURL: thumbnailURL,
+      });
+      setNewTiktok({ url: '', baslik: '' });
+      await fetchTiktokVideos();
+      Alert.alert('Başarılı', 'TikTok videosu eklendi');
+    } catch (error) {
+      console.error('Video ekleme hatası:', error);
+      Alert.alert('Hata', error.toString());
+    } finally {
+      setLoadingTiktok(false);
+    }
+  };
+
+  const handleDeleteTiktok = (tiktokID) => {
+    Alert.alert(
+      'Videoyu Sil',
+      'Bu TikTok videosunu silmek istediğinize emin misiniz?',
+      [
+        { text: 'İptal', style: 'cancel' },
+        {
+          text: 'Sil',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteTikTokVideo(tiktokID);
+              await fetchTiktokVideos();
+              Alert.alert('Başarılı', 'Video silindi');
+            } catch (error) {
+              Alert.alert('Hata', error.toString());
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const updateField = (field, value) => {
     setFormData((prevData) => ({ ...prevData, [field]: value }));
   };
 
-  const handleMapPress = async (event) => {
-    const { coordinate } = event.nativeEvent;
+  const handleMapPress = async (coordinate) => {
     setMarkerCoordinate(coordinate);
     await getAddressFromCoordinates(coordinate.latitude, coordinate.longitude);
   };
@@ -55,11 +132,20 @@ export default function RestaurantEditScreen({ navigation }) {
       const address = await Location.reverseGeocodeAsync({ latitude, longitude });
       if (address && address.length > 0) {
         const place = address[0];
-        let city = place.city || place.region || '';
-        const district = place.district || place.subregion || '';
+        
+        // İl bilgisi: region (İl düzeyinde bilgi)
+        let city = place.region || place.city || '';
+        
+        // İlçe bilgisi: district veya city (district yoksa city'yi ilçe olarak kullan)
+        // Ama eğer city zaten region ile aynıysa, subregion'ı kullan
+        let district = place.district || '';
+        if (!district && place.city && place.city !== city) {
+          district = place.city;
+        }
         
         // Şehir adından 'Merkez' kelimesini temizle
         city = city.replace(/\s*Merkez\s*$/i, '').trim();
+        district = district.replace(/\s*Merkez\s*$/i, '').trim();
         
         updateField('sehir', city);
         updateField('ilce', district);
@@ -119,10 +205,20 @@ export default function RestaurantEditScreen({ navigation }) {
 
     setLoading(true);
     try {
-      // TODO: API çağrısı yapılacak
+      const updateData = {
+        ad: formData.ad,
+        telefon: formData.telefon,
+        latitude: markerCoordinate.latitude,
+        longitude: markerCoordinate.longitude,
+        sehir: formData.sehir,
+        ilce: formData.ilce,
+      };
+      
+      await updateRestaurant(restaurant.restorantID, updateData);
+      
       Alert.alert(
-        'Bilgi',
-        'Restoran bilgileri güncelleme özelliği yakında eklenecek',
+        'Başarılı',
+        'Restoran bilgileri güncellendi',
         [
           {
             text: 'Tamam',
@@ -186,6 +282,86 @@ export default function RestaurantEditScreen({ navigation }) {
           </View>
         </View>
 
+        {/* TikTok Videos Section */}
+        <View style={styles.inputContainer}>
+          <Text style={styles.label}>TikTok Videoları</Text>
+          
+          {/* Add New TikTok */}
+          <View style={styles.tiktokAddContainer}>
+            <View style={styles.inputWrapper}>
+              <Ionicons name="logo-tiktok" size={20} color="#666" style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder="https://www.tiktok.com/@username/video/..."
+                value={newTiktok.url}
+                onChangeText={(value) => setNewTiktok({ ...newTiktok, url: value })}
+                keyboardType="url"
+                autoCapitalize="none"
+                placeholderTextColor="#999"
+              />
+            </View>
+            <View style={styles.inputWrapper}>
+              <Ionicons name="text" size={20} color="#666" style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Video başlığı (opsiyonel)"
+                value={newTiktok.baslik}
+                onChangeText={(value) => setNewTiktok({ ...newTiktok, baslik: value })}
+                placeholderTextColor="#999"
+              />
+            </View>
+            <TouchableOpacity
+              style={styles.addTiktokButton}
+              onPress={handleAddTiktok}
+              disabled={loadingTiktok}
+            >
+              {loadingTiktok ? (
+                <ActivityIndicator size="small" color="#FFF" />
+              ) : (
+                <>
+                  <Ionicons name="add-circle" size={20} color="#FFF" />
+                  <Text style={styles.addTiktokButtonText}>Video Ekle</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          {/* TikTok Videos List */}
+          {tiktokVideos.length > 0 ? (
+            <FlatList
+              data={tiktokVideos}
+              scrollEnabled={false}
+              keyExtractor={(item) => item.tiktokID.toString()}
+              renderItem={({ item }) => (
+                <View style={styles.tiktokItem}>
+                  <View style={styles.tiktokItemContent}>
+                    <Ionicons name="logo-tiktok" size={24} color="#FF6B6B" />
+                    <View style={styles.tiktokItemText}>
+                      <Text style={styles.tiktokItemTitle} numberOfLines={1}>
+                        {item.baslik || 'TikTok Videosu'}
+                      </Text>
+                      <Text style={styles.tiktokItemUrl} numberOfLines={1}>
+                        {item.tiktokURL}
+                      </Text>
+                    </View>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => handleDeleteTiktok(item.tiktokID)}
+                    style={styles.deleteButton}
+                  >
+                    <Ionicons name="trash-outline" size={20} color="#FF6B6B" />
+                  </TouchableOpacity>
+                </View>
+              )}
+            />
+          ) : (
+            <View style={styles.emptyTiktok}>
+              <Ionicons name="videocam-off-outline" size={48} color="#CCC" />
+              <Text style={styles.emptyTiktokText}>Henüz TikTok videosu eklenmedi</Text>
+            </View>
+          )}
+        </View>
+
         {/* Location Section */}
         <View style={styles.inputContainer}>
           <View style={styles.labelRow}>
@@ -207,17 +383,12 @@ export default function RestaurantEditScreen({ navigation }) {
           </View>
           
           <View style={styles.mapContainer}>
-            <MapView
+            <MapComponent
               style={styles.map}
-              region={region}
-              onPress={handleMapPress}
-              showsUserLocation
-              showsMyLocationButton={false}
-            >
-              {markerCoordinate && (
-                <Marker coordinate={markerCoordinate} title={formData.ad || 'Restoran'} />
-              )}
-            </MapView>
+              initialLocation={region}
+              markerLocation={markerCoordinate}
+              onLocationSelect={handleMapPress}
+            />
           </View>
 
           {markerCoordinate && (
@@ -388,5 +559,70 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  tiktokAddContainer: {
+    backgroundColor: '#F8F9FA',
+    padding: 15,
+    borderRadius: 12,
+    marginBottom: 15,
+    gap: 10,
+  },
+  addTiktokButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FF6B6B',
+    paddingVertical: 12,
+    borderRadius: 10,
+    gap: 8,
+  },
+  addTiktokButtonText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  tiktokItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFF',
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  tiktokItemContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 12,
+  },
+  tiktokItemText: {
+    flex: 1,
+  },
+  tiktokItemTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
+  },
+  tiktokItemUrl: {
+    fontSize: 12,
+    color: '#999',
+  },
+  deleteButton: {
+    padding: 8,
+  },
+  emptyTiktok: {
+    alignItems: 'center',
+    padding: 40,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+  },
+  emptyTiktokText: {
+    fontSize: 14,
+    color: '#999',
+    marginTop: 12,
   },
 });

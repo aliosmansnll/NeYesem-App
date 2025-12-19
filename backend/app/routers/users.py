@@ -73,6 +73,20 @@ def get_user(kullanici_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Kullanıcı bulunamadı")
     return user
 
+@router.delete("/bulk-delete", status_code=status.HTTP_204_NO_CONTENT)
+def delete_all_users(db: Session = Depends(get_db)):
+    """UYARI: Tüm kullanıcı hesaplarını sil"""
+    try:
+        # Önce tüm yorumları sil
+        db.query(models.Yorum).delete(synchronize_session=False)
+        # Sonra tüm kullanıcıları sil
+        deleted_count = db.query(models.KullaniciHesap).delete(synchronize_session=False)
+        db.commit()
+        return None
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Silme işlemi başarısız: {str(e)}")
+
 @router.delete("/{kullanici_id}", status_code=status.HTTP_200_OK)
 def delete_user(kullanici_id: int, db: Session = Depends(get_db)):
     """Kullanıcı silme"""
@@ -94,4 +108,5 @@ def delete_user(kullanici_id: int, db: Session = Depends(get_db)):
         }
     except Exception as e:
         db.rollback()
+        raise HTTPException(status_code=500, detail=f"Silme işlemi başarısız: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Silme işlemi başarısız: {str(e)}")

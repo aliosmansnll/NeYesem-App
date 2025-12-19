@@ -3,6 +3,7 @@ import { View, TextInput, Text, StyleSheet, TouchableOpacity } from 'react-nativ
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { spacing, borderRadius, shadows } from '../theme/spacing';
+import { moderateScale, scaleFontSize } from '../utils/responsive';
 
 export default function Input({
   label,
@@ -72,21 +73,21 @@ export default function Input({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: spacing.md,
+    marginBottom: moderateScale(spacing.md),
     flex: 1,
   },
   label: {
-    fontSize: 14,
+    fontSize: scaleFontSize(14),
     fontWeight: '600',
     color: colors.textPrimary,
-    marginBottom: spacing.xs,
+    marginBottom: moderateScale(spacing.xs),
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.white,
-    borderRadius: borderRadius.lg,
-    paddingHorizontal: spacing.md,
+    borderRadius: moderateScale(borderRadius.lg),
+    paddingHorizontal: moderateScale(spacing.md),
     borderWidth: 2,
     borderColor: colors.veryLightGray,
     ...shadows.small,
@@ -99,21 +100,21 @@ const styles = StyleSheet.create({
     borderColor: colors.error,
   },
   icon: {
-    marginRight: spacing.sm,
+    marginRight: moderateScale(spacing.sm),
   },
   input: {
     flex: 1,
-    paddingVertical: spacing.md,
-    fontSize: 16,
+    paddingVertical: moderateScale(spacing.md),
+    fontSize: scaleFontSize(16),
     color: colors.textPrimary,
   },
   eyeButton: {
-    padding: spacing.xs,
+    padding: moderateScale(spacing.xs),
   },
   errorText: {
-    fontSize: 12,
+    fontSize: scaleFontSize(12),
     color: colors.error,
-    marginTop: spacing.xs,
-    marginLeft: spacing.xs,
+    marginTop: moderateScale(spacing.xs),
+    marginLeft: moderateScale(spacing.xs),
   },
 });

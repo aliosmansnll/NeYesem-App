@@ -46,6 +46,40 @@ def get_menu_item(menu_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Menü öğesi bulunamadı")
     return item
 
+@router.delete("/bulk-delete", status_code=status.HTTP_204_NO_CONTENT)
+def delete_all_menu_items(db: Session = Depends(get_db)):
+    """UYARI: Tüm menü öğelerini sil"""
+    try:
+        deleted_count = db.query(models.RestorantMenu).delete(synchronize_session=False)
+        db.commit()
+        return None
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Silme işlemi başarısız: {str(e)}")
+
+@router.delete("/restaurant/{restoran_id}/all", status_code=status.HTTP_204_NO_CONTENT)
+def delete_all_restaurant_menu_items(restoran_id: int, db: Session = Depends(get_db)):
+    """Belirli bir restoranın tüm menü öğelerini sil"""
+    restoran = db.query(models.RestorantHesap).filter(
+        models.RestorantHesap.restorantID == restoran_id
+    ).first()
+    
+    if not restoran:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Restoran bulunamadı"
+        )
+    
+    try:
+        deleted_count = db.query(models.RestorantMenu).filter(
+            models.RestorantMenu.restorantID == restoran_id
+        ).delete(synchronize_session=False)
+        db.commit()
+        return None
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Silme işlemi başarısız: {str(e)}")
+
 @router.delete("/{menu_id}", status_code=status.HTTP_200_OK)
 def delete_menu_item(menu_id: int, db: Session = Depends(get_db)):
     """Menü öğesini sil"""

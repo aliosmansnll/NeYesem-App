@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.db import engine, Base
-from app.routers import users, restaurants, menu, reviews
+from app.routers import users, restaurants, menu, reviews, tiktok
 from pathlib import Path
 
 # Tabloları oluştur
@@ -29,6 +29,7 @@ app.include_router(users.router)
 app.include_router(restaurants.router)
 app.include_router(menu.router)
 app.include_router(reviews.router)
+app.include_router(tiktok.router)
 
 @app.get("/")
 def read_root():

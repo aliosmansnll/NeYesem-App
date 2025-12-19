@@ -13,9 +13,13 @@ import { getRestaurantReviews, getRestaurantMenu } from '../services/api';
 export default function RestaurantReviewsScreen() {
   const { restaurant } = useAuth();
   const [reviews, setReviews] = useState([]);
+  const [displayedReviews, setDisplayedReviews] = useState([]);
   const [menuItems, setMenuItems] = useState({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
   const [stats, setStats] = useState({
     total: 0,
     average: 0,
@@ -41,7 +45,12 @@ export default function RestaurantReviewsScreen() {
       console.log('Menü yorumları:', reviewsData.filter(r => r.menuID).length);
       console.log('Menü verileri:', menuData.length);
       
+      // Backend'den zaten tarihe göre sıralı geliyor (en yeni en üstte)
       setReviews(reviewsData);
+      
+      // İlk sayfayı yükle
+      setDisplayedReviews(reviewsData.slice(0, ITEMS_PER_PAGE));
+      setPage(1);
       
       // Menü bilgilerini ID'ye göre mapping yap
       const menuMap = {};
@@ -73,6 +82,20 @@ export default function RestaurantReviewsScreen() {
   const onRefresh = () => {
     setRefreshing(true);
     fetchReviews();
+  };
+
+  const loadMore = () => {
+    if (loadingMore || displayedReviews.length >= reviews.length) return;
+    
+    setLoadingMore(true);
+    const nextPage = page + 1;
+    const newReviews = reviews.slice(0, nextPage * ITEMS_PER_PAGE);
+    
+    setTimeout(() => {
+      setDisplayedReviews(newReviews);
+      setPage(nextPage);
+      setLoadingMore(false);
+    }, 300);
   };
 
   const renderStars = (rating) => {
@@ -150,7 +173,7 @@ export default function RestaurantReviewsScreen() {
 
       {/* Reviews List */}
       <FlatList
-        data={reviews}
+        data={displayedReviews}
         renderItem={renderReview}
         keyExtractor={(item) => String(item.yorumID || Math.random())}
         contentContainerStyle={styles.list}
@@ -160,6 +183,16 @@ export default function RestaurantReviewsScreen() {
             onRefresh={onRefresh}
             colors={['#4ECDC4']}
           />
+        }
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={
+          loadingMore ? (
+            <View style={styles.loadingMoreContainer}>
+              <ActivityIndicator size="small" color="#4ECDC4" />
+              <Text style={styles.loadingMoreText}>Yüklüyor...</Text>
+            </View>
+          ) : null
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
@@ -292,6 +325,17 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
+    color: '#999',
+  },
+  loadingMoreContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    gap: 10,
+  },
+  loadingMoreText: {
+    fontSize: 14,
     color: '#999',
   },
 });

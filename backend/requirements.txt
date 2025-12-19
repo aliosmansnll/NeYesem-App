@@ -7,3 +7,4 @@ python-dotenv
 email-validator
 python-multipart
 pillow
+httpx
