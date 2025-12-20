@@ -1,0 +1,2 @@
+backend/uploads/restaurant_photos/*
+!backend/uploads/restaurant_photos/.gitkeep
