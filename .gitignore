@@ -50,5 +50,5 @@ Thumbs.db
 .env.*.local
 
 # Uploads
-backend/uploads/*
-!backend/uploads/.gitkeep
+# backend/uploads/*
+# !backend/uploads/.gitkeep
