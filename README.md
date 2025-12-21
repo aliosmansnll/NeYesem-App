@@ -271,20 +271,4 @@ http://localhost:8000/docs
 
 Bu proje MIT lisansı altında lisanslanmıştır.
 
-## 👥 İletişim
-
-Proje Sahibi - [GitHub Profiliniz](https://github.com/kullaniciadi)
-
-Proje Linki: [https://github.com/kullaniciadi/neyesem](https://github.com/kullaniciadi/neyesem)
-
-## 🙏 Teşekkürler
-
-- [FastAPI](https://fastapi.tiangolo.com/)
-- [React Native](https://reactnative.dev/)
-- [Expo](https://expo.dev/)
-- [PostgreSQL](https://www.postgresql.org/)
-- [Docker](https://www.docker.com/)
-
----
-
 ⭐ Projeyi beğendiyseniz yıldız vermeyi unutmayın!
